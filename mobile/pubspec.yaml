@@ -49,6 +49,7 @@ dependencies:
   agora_rtc_engine: ^6.3.0
   permission_handler: ^11.3.1
   fl_chart: ^0.68.0
+  supabase_flutter: ^2.3.4
   # flutter_midi_command: ^0.5.3  # Gỡ bỏ để tập trung Video Call
 
 dev_dependencies:

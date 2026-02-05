@@ -1,63 +1,24 @@
 import 'package:flutter/material.dart';
 import '../models/piano_model.dart';
+import '../services/piano_service.dart';
 import 'piano_detail_screen.dart';
 
-class RentalScreen extends StatelessWidget {
+class RentalScreen extends StatefulWidget {
   const RentalScreen({super.key});
 
-  // Danh sách đàn Piano giả (Dummy Data)
-  List<PianoModel> get pianoList => [
-        PianoModel(
-          id: '1',
-          name: 'Yamaha P-45',
-          imageUrl: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800',
-          pricePerMonth: 500000,
-          isAvailable: true,
-          brand: 'Yamaha',
-          description: 'Đàn piano điện tử 88 phím cảm ứng lực, âm thanh chất lượng cao, phù hợp cho người mới bắt đầu.',
-          keys: 88,
-        ),
-        PianoModel(
-          id: '2',
-          name: 'Casio CDP-S110',
-          imageUrl: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800',
-          pricePerMonth: 450000,
-          isAvailable: true,
-          brand: 'Casio',
-          description: 'Thiết kế mỏng nhẹ, dễ di chuyển. 88 phím cảm ứng lực, âm thanh tự nhiên.',
-          keys: 88,
-        ),
-        PianoModel(
-          id: '3',
-          name: 'Roland FP-10',
-          imageUrl: 'https://images.unsplash.com/photo-1552422535-c45813c61732?w=800',
-          pricePerMonth: 650000,
-          isAvailable: true,
-          brand: 'Roland',
-          description: 'Piano cao cấp với công nghệ âm thanh SuperNATURAL, cảm giác phím gần với đàn Grand Piano.',
-          keys: 88,
-        ),
-        PianoModel(
-          id: '4',
-          name: 'Korg B2',
-          imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
-          pricePerMonth: 550000,
-          isAvailable: false,
-          brand: 'Korg',
-          description: '88 phím cảm ứng lực, 12 âm sắc khác nhau, hệ thống loa 2x15W mạnh mẽ.',
-          keys: 88,
-        ),
-        PianoModel(
-          id: '5',
-          name: 'Kawai ES110',
-          imageUrl: 'https://images.unsplash.com/photo-1571974599782-87624638275e?w=800',
-          pricePerMonth: 700000,
-          isAvailable: true,
-          brand: 'Kawai',
-          description: 'Đàn piano chuyên nghiệp với bàn phím Responsive Hammer Compact, âm thanh Harmonic Imaging.',
-          keys: 88,
-        ),
-      ];
+  @override
+  State<RentalScreen> createState() => _RentalScreenState();
+}
+
+class _RentalScreenState extends State<RentalScreen> {
+  final PianoService _pianoService = PianoService();
+  late Future<List<PianoModel>> _pianosFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _pianosFuture = _pianoService.getPianos();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,57 +31,90 @@ class RentalScreen extends StatelessWidget {
       ),
       body: Container(
         color: Colors.grey[100],
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFF0A1E3C),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
+        child: FutureBuilder<List<PianoModel>>(
+          future: _pianosFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Lỗi tải dữ liệu: ${snapshot.error}'),
+              );
+            }
+
+            final pianos = snapshot.data ?? [];
+
+            if (pianos.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Không tìm thấy đàn nào',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ],
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tìm đàn phù hợp',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0A1E3C),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${pianoList.where((p) => p.isAvailable).length} đàn đang sẵn sàng',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tìm đàn phù hợp',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${pianos.where((p) => p.isAvailable).length} đàn đang sẵn sàng',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // Piano List
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: pianoList.length,
-                itemBuilder: (context, index) {
-                  final piano = pianoList[index];
-                  return _buildPianoCard(context, piano);
-                },
-              ),
-            ),
-          ],
+                // Piano List
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: pianos.length,
+                    itemBuilder: (context, index) {
+                      final piano = pianos[index];
+                      return _buildPianoCard(context, piano);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

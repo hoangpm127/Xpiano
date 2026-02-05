@@ -4,8 +4,8 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // IMPORTANT: Replace with your actual App ID
-const String _kAppId = "YOUR_AGORA_APP_ID"; 
-const String _kChannelName = "demo_class";
+const String _kAppId = "e2de82235a9a4c62810be65304f74a0a"; 
+const String _kChannelName = "xpiano_demo";
 
 class ClassroomScreen extends StatefulWidget {
   const ClassroomScreen({super.key});
