@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+// IMPORTANT: Replace with your actual App ID
+const String _kAppId = "YOUR_AGORA_APP_ID"; 
+const String _kChannelName = "demo_class";
 
 class ClassroomScreen extends StatefulWidget {
   const ClassroomScreen({super.key});
@@ -8,328 +15,288 @@ class ClassroomScreen extends StatefulWidget {
 }
 
 class _ClassroomScreenState extends State<ClassroomScreen> {
-  bool isMicOn = true;
-  bool isCameraOn = true;
+  late RtcEngine _engine;
+  bool _isInit = false;
+  bool _isMicOn = true;
+  bool _isHandRaised = false;
+  
+  // Agora State
+  int? _remoteUid; // ID của giáo viên (người khác tham gia)
+  bool _localUserJoined = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(),
-
-            // Main content
-            Expanded(
-              child: Column(
-                children: [
-                  // Teacher Video (Phần lớn)
-                  Expanded(
-                    flex: 3,
-                    child: _buildTeacherVideo(),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Students Grid (Phần nhỏ)
-                  Expanded(
-                    flex: 2,
-                    child: _buildStudentsGrid(),
-                  ),
-                ],
-              ),
-            ),
-
-            // Control Bar
-            _buildControlBar(),
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    // Force landscape mode
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    
+    _initAgora();
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '🎓 Lớp học trực tuyến',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'LIVE - 45:32',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              _buildHeaderButton(Icons.people, '5'),
-              const SizedBox(width: 8),
-              _buildHeaderButton(Icons.more_vert, null),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _initAgora() async {
+    // Request permissions
+    await [Permission.microphone, Permission.camera].request();
 
-  Widget _buildHeaderButton(IconData icon, String? badge) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(icon, color: Colors.white, size: 20),
-          if (badge != null)
-            Positioned(
-              right: -6,
-              top: -6,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+    // Create Agora Engine
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(const RtcEngineContext(
+      appId: _kAppId,
+      channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+    ));
 
-  Widget _buildTeacherVideo() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF0A1E3C),
-          width: 2,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.person,
-                  size: 80,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Teacher Video',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Name tag
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.mic, size: 14, color: Colors.white),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Cô Hương - Giáo viên',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+    await _engine.enableVideo();
+    await _engine.startPreview();
 
-  Widget _buildStudentsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 1.3,
-        ),
-        itemCount: 4,
-        itemBuilder: (context, index) {
-          return _buildStudentTile(index + 1);
+    // Event Handlers
+    _engine.registerEventHandler(
+      RtcEngineEventHandler(
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          debugPrint("local user ${connection.localUid} joined");
+          setState(() {
+            _localUserJoined = true;
+          });
+        },
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          debugPrint("remote user $remoteUid joined");
+          setState(() {
+            _remoteUid = remoteUid;
+          });
+        },
+        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+          debugPrint("remote user $remoteUid left channel");
+          setState(() {
+            _remoteUid = null;
+          });
         },
       ),
     );
+
+    // Join Channel
+    await _engine.joinChannel(
+      token: "", // Use temp token if needed, empty for now (testing mode)
+      channelId: _kChannelName,
+      uid: 0,
+      options: const ChannelMediaOptions(),
+    );
+    
+    setState(() {
+      _isInit = true;
+    });
   }
 
-  Widget _buildStudentTile(int studentNumber) {
-    final isCurrentUser = studentNumber == 1;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[850],
-        borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser
-            ? Border.all(color: Colors.green, width: 2)
-            : null,
-      ),
-      child: Stack(
+  Future<void> _disposeAgora() async {
+    await _engine.leaveChannel();
+    await _engine.release();
+  }
+
+  @override
+  void dispose() {
+    // Restore portrait mode
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    _disposeAgora();
+    super.dispose();
+  }
+
+  void _onToggleMic() {
+    setState(() {
+      _isMicOn = !_isMicOn;
+    });
+    _engine.muteLocalAudioStream(!_isMicOn);
+  }
+
+  void _onLeaveChannel() {
+    // Navigate back
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInit) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
         children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  size: 40,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isCurrentUser ? 'You' : 'Student $studentNumber',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+          // Layer 1: Remote Video (Teacher) or Placeholder
+          Positioned.fill(
+            child: _buildRemoteVideo(),
           ),
-          // Mic status
-          if (studentNumber == 2 || studentNumber == 4)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.mic_off,
-                  size: 12,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+
+          // Layer 2: Local Video (Student - Small floating)
+          Positioned(
+            top: 16,
+            left: 16,
+            width: 120,
+            height: 90,
+            child: _buildLocalVideo(),
+          ),
+
+          // Layer 3: Piano Visualizer (Bottom Overlay)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _buildPianoVisualizer(),
+          ),
+
+          // Layer 4: Controls
+          _buildControls(),
         ],
       ),
     );
   }
 
-  Widget _buildControlBar() {
+  Widget _buildRemoteVideo() {
+    if (_remoteUid != null) {
+      return AgoraVideoView(
+        controller: VideoViewController.remote(
+          rtcEngine: _engine,
+          canvas: VideoCanvas(uid: _remoteUid),
+          connection: const RtcConnection(channelId: _kChannelName),
+        ),
+      );
+    } else {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_off,
+                size: 80,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Đang chờ giáo viên...',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildLocalVideo() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
         color: Colors.grey[900],
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: _localUserJoined
+            ? AgoraVideoView(
+                controller: VideoViewController(
+                  rtcEngine: _engine,
+                  canvas: const VideoCanvas(uid: 0),
+                ),
+              )
+            : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+    );
+  }
+
+  Widget _buildPianoVisualizer() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.15,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withOpacity(0.8),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Mic button
-          _buildControlButton(
-            icon: isMicOn ? Icons.mic : Icons.mic_off,
-            label: 'Mic',
-            isActive: isMicOn,
-            onTap: () {
-              setState(() {
-                isMicOn = !isMicOn;
-              });
-            },
+          // Basic Key Visualization
+          SizedBox(
+            height: 40,
+            child: Row(
+              children: List.generate(20, (index) {
+                 // Simple visualization pattern
+                 final isBlack = [1, 3, 6, 8, 10].contains(index % 12);
+                 return Expanded(
+                   child: Container(
+                     margin: const EdgeInsets.symmetric(horizontal: 1),
+                     color: isBlack ? Colors.black : Colors.white.withOpacity(0.8),
+                   ),
+                 );
+              }),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControls() {
+    return SafeArea(
+      child: Stack(
+        children: [
+          // Exit button (Top right)
+          Positioned(
+            top: 16,
+            right: 16,
+            child: _buildControlButton(
+              icon: Icons.close,
+              color: Colors.red,
+              onTap: _onLeaveChannel,
+            ),
           ),
 
-          // Camera button
-          _buildControlButton(
-            icon: isCameraOn ? Icons.videocam : Icons.videocam_off,
-            label: 'Camera',
-            isActive: isCameraOn,
-            onTap: () {
-              setState(() {
-                isCameraOn = !isCameraOn;
-              });
-            },
+          // Raise hand button (Bottom right, above piano)
+          Positioned(
+            bottom: MediaQuery.of(context).size.height * 0.15 + 16,
+            right: 16,
+            child: _buildControlButton(
+              icon: _isHandRaised ? Icons.back_hand : Icons.back_hand_outlined,
+              color: _isHandRaised ? Colors.amber : Colors.white,
+              onTap: () {
+                setState(() {
+                  _isHandRaised = !_isHandRaised;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(_isHandRaised ? 'Đã giơ tay ✋' : 'Đã hạ tay'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
           ),
 
-          // End call button
-          _buildControlButton(
-            icon: Icons.call_end,
-            label: 'Kết thúc',
-            isActive: false,
-            isEndCall: true,
-            onTap: () {
-              _showEndClassDialog();
-            },
+          // Mic button (Bottom left)
+          Positioned(
+            bottom: MediaQuery.of(context).size.height * 0.15 + 16,
+            left: 16,
+            child: _buildControlButton(
+              icon: _isMicOn ? Icons.mic : Icons.mic_off,
+              color: _isMicOn ? Colors.white : Colors.red,
+              onTap: _onToggleMic,
+            ),
           ),
         ],
       ),
@@ -338,77 +305,30 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
 
   Widget _buildControlButton({
     required IconData icon,
-    required String label,
-    required bool isActive,
-    bool isEndCall = false,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isEndCall
-                  ? Colors.red
-                  : isActive
-                      ? Colors.white.withOpacity(0.2)
-                      : Colors.grey[800],
-              shape: BoxShape.circle,
-              border: isActive && !isEndCall
-                  ? Border.all(color: Colors.white, width: 2)
-                  : null,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-          ),
+        child: Icon(
+          icon,
+          color: color == Colors.white ? Colors.black : Colors.white,
+          size: 24,
         ),
-      ],
-    );
-  }
-
-  void _showEndClassDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kết thúc lớp học'),
-        content: const Text('Bạn có chắc muốn kết thúc lớp học này không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đã kết thúc lớp học! 👋'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('Kết thúc'),
-          ),
-        ],
       ),
     );
   }

@@ -43,6 +43,12 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Xpiano cần Bluetooth để kết nối với đàn Piano MIDI</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Xpiano cần truy cập Camera để học trực tuyến với giáo viên</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Xpiano cần truy cập Micro để trao đổi với giáo viên</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

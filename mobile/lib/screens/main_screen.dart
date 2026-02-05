@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'rental_screen.dart';
 import 'classroom_screen.dart';
-import 'account_screen.dart';
+import 'profile_screen.dart'; // Import ProfileScreen mới
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,7 +19,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const RentalScreen(),
     const ClassroomScreen(),
-    const AccountScreen(),
+    const ProfileScreen(), // Dùng ProfileScreen thay vì AccountScreen
   ];
 
   @override

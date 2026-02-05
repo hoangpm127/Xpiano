@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/main_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const XpianoApp());
@@ -21,7 +21,7 @@ class XpianoApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      home: const LoginScreen(),
     );
   }
 }
