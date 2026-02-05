@@ -53,14 +53,25 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Welcome to Xpiano',
-              style: Theme.of(context).textTheme.headlineMedium,
+              '🎹 Chào mừng đến Xpiano',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Vietnam\'s First Music Ecosystem Platform',
+              '🚀 Nền tảng âm nhạc đầu tiên tại Việt Nam',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey,
+                    color: Colors.grey[600],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '✨ Kết nối qua WiFi - Không cần USB',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w500,
                   ),
             ),
             const SizedBox(height: 48),
