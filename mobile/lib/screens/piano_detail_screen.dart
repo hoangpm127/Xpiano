@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/piano_model.dart';
 
 class PianoDetailScreen extends StatefulWidget {
@@ -474,7 +475,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
     }
   }
 
-  void _handleDeposit() {
+  Future<void> _handleDeposit() async {
     // Validate
     if (_addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -496,83 +497,121 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
       return;
     }
 
-    // Generate order ID
-    final orderId = 'XPIANO-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    // Get current user
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đăng nhập để đặt hàng'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    // Show success dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
         ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
+      );
+
+      // Insert order to Supabase
+      await Supabase.instance.client.from('orders').insert({
+        'user_id': user.id,
+        'piano_id': widget.piano.id,
+        'delivery_address': _addressController.text.trim(),
+        'rental_date': _selectedDate!.toIso8601String(),
+        'status': 'pending',
+      });
+
+      // Hide loading
+      if (mounted) Navigator.pop(context);
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Đặt đơn thành công!',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đàn: ${widget.piano.name}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Địa chỉ: ${_addressController.text}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Ngày nhận: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Chúng tôi sẽ liên hệ bạn sớm nhất!',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Back to list
+                },
+                child: const Text('Đóng'),
               ),
-              child: const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Đặt đơn thành công!',
-              style: TextStyle(fontSize: 18),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Mã đơn: $orderId',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0A1E3C),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Đàn: ${widget.piano.name}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            Text(
-              'Địa chỉ: ${_addressController.text}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            Text(
-              'Ngày nhận: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Chúng tôi sẽ liên hệ bạn sớm nhất!',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Back to list
-            },
-            child: const Text('Đóng'),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      // Hide loading
+      if (mounted) Navigator.pop(context);
+
+      // Show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi đặt hàng: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _formatPrice(int price) {

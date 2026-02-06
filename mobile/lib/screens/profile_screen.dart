@@ -1,8 +1,43 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart'; // Để navigate về Login
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login_screen.dart';
+import 'order_history_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  int _orderCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrderCount();
+  }
+
+  Future<void> _loadOrderCount() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final response = await Supabase.instance.client
+            .from('orders')
+            .select()
+            .eq('user_id', user.id);
+        
+        if (mounted) {
+          setState(() {
+            _orderCount = (response as List).length;
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore error, keep count as 0
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,44 +70,49 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? 'Guest';
+    
     return Column(
       children: [
-        // Avatar
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFF0A1E3C), width: 2),
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 50,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
+            backgroundColor: const Color(0xFF0A1E3C).withOpacity(0.1),
+            child: const Icon(
+              Icons.person,
+              size: 50,
+              color: Color(0xFF0A1E3C),
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        // Name
-        const Text(
-          'Nguyễn Thong',
-          style: TextStyle(
-            fontSize: 24,
+        Text(
+          email,
+          style: const TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0A1E3C),
           ),
         ),
         const SizedBox(height: 8),
-        // Tag
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF0A1E3C).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
             'Thành viên Beginner',
             style: TextStyle(
-              color: Color(0xFF0A1E3C),
-              fontWeight: FontWeight.w600,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.orange,
             ),
           ),
         ),
@@ -173,8 +213,15 @@ class ProfileScreen extends StatelessWidget {
           _buildMenuItem(
             icon: Icons.piano,
             title: 'Đàn đang thuê',
-            badge: '1',
-            onTap: () {},
+            badge: _orderCount > 0 ? _orderCount.toString() : null,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OrderHistoryScreen(),
+                ),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.calendar_today,
@@ -202,12 +249,14 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.logout,
             title: 'Đăng xuất',
             isDestructive: true,
-            onTap: () {
-              // Navigate back to LoginScreen
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-              );
+            onTap: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
