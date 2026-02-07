@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../services/supabase_service.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
+import 'teacher_schedule_screen.dart';
+import 'student_management_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -174,6 +176,26 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ],
         ).animate().fadeIn(delay: 300.ms).scale(begin: const Offset(0.8, 0.8)),
         const SizedBox(width: 12),
+        // Logout Button
+        GestureDetector(
+          onTap: _handleLogout,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withOpacity(0.2),
+              ),
+            ),
+            child: const Icon(
+              Icons.logout,
+              color: Color(0xFFD4AF37),
+              size: 24,
+            ),
+          ),
+        ).animate().fadeIn(delay: 350.ms).scale(begin: const Offset(0.8, 0.8)),
+        const SizedBox(width: 12),
         // Avatar
         Container(
           width: 56,
@@ -304,14 +326,25 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        // Card 3: Students
+        // Card 3: Students - Tappable
         Expanded(
-          child: _buildStatCard(
-            label: 'Học viên',
-            value: '$_totalStudents',
-            valueColor: Colors.white,
-            subtitle: 'Đang hoạt động',
-            delay: 300,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StudentManagementScreen(),
+                ),
+              );
+            },
+            child: _buildStatCard(
+              label: 'Học viên',
+              value: '$_totalStudents',
+              valueColor: Colors.white,
+              subtitle: 'Đang hoạt động',
+              delay: 300,
+              showArrow: true,
+            ),
           ),
         ),
       ],
@@ -324,6 +357,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     required Color valueColor,
     required String subtitle,
     required int delay,
+    bool showArrow = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -337,12 +371,23 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.grey[400],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey[400],
+                ),
+              ),
+              if (showArrow)
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: const Color(0xFFD4AF37).withOpacity(0.6),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -666,7 +711,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TeacherScheduleScreen(),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
@@ -853,6 +905,43 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
+  }
+
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(
+          'Đăng xuất',
+          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn đăng xuất?',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true && mounted) {
+      await _supabaseService.signOut();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   void _showProfileMenu(BuildContext context) {
@@ -1071,15 +1160,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           // Already on Dashboard, just update state
           setState(() => _currentNavIndex = 0);
         } else if (index == 1) {
-          // Calendar - Coming soon
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Tính năng Lịch đang được phát triển',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              backgroundColor: const Color(0xFF1E1E1E),
-              behavior: SnackBarBehavior.floating,
+          // Navigate to Schedule
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TeacherScheduleScreen(),
             ),
           );
         } else if (index == 2) {
