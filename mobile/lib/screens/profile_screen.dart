@@ -5,6 +5,8 @@ import '../models/booking.dart';
 import '../services/supabase_service.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import 'teacher_dashboard_screen.dart';
+import 'admin_debug_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,6 +24,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // State
   List<Booking> _bookings = [];
   bool _isLoading = true;
+  Map<String, dynamic>? _teacherProfile;
+  bool _isTeacher = false;
+  int _adminTapCount = 0;
 
   @override
   void initState() {
@@ -29,7 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _checkAuthAndFetch();
   }
   
-  void _checkAuthAndFetch() {
+  void _checkAuthAndFetch() async {
     final user = _supabaseService.currentUser;
     if (user == null) {
       // User is guest, don't fetch bookings
@@ -37,7 +42,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = false;
       });
     } else {
-      _fetchBookings();
+      // Check if user is a teacher
+      final teacherProfile = await _supabaseService.getTeacherProfile();
+      if (teacherProfile != null) {
+        setState(() {
+          _teacherProfile = teacherProfile;
+          _isTeacher = true;
+          _isLoading = false;
+        });
+      } else {
+        // Regular student user
+        _fetchBookings();
+      }
     }
   }
 
@@ -127,12 +143,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = _supabaseService.currentUser;
     
+    // If loading, show loading indicator
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: backgroundDark,
+        body: Center(
+          child: CircularProgressIndicator(color: primaryGold),
+        ),
+      );
+    }
+    
+    // If user is a teacher with approved status, show full Teacher Dashboard
+    if (_isTeacher && _teacherProfile?['verification_status'] == 'approved') {
+      return const TeacherDashboardScreen();
+    }
+    
+    // Otherwise show normal profile screen with Scaffold
     return Scaffold(
       backgroundColor: backgroundDark,
       body: SafeArea(
         child: user == null 
-            ? _buildGuestView() 
-            : Column(
+            ? _buildGuestView()
+            : _isTeacher
+                ? _buildTeacherPendingOrRejected()
+                : Column(
           children: [
             // 1. Profile Header
             _buildProfileHeader(),
@@ -193,10 +227,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.person_outline,
-              size: 80,
-              color: primaryGold.withOpacity(0.5),
+            GestureDetector(
+              onTap: () {
+                setState(() => _adminTapCount++);
+                if (_adminTapCount >= 5) {
+                  _adminTapCount = 0;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminDebugScreen(),
+                    ),
+                  );
+                } else if (_adminTapCount >= 3) {
+                  // Show hint when getting close
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${5 - _adminTapCount} lần nữa để mở Admin...',
+                        style: GoogleFonts.inter(color: Colors.white),
+                      ),
+                      duration: const Duration(milliseconds: 500),
+                      backgroundColor: const Color(0xFF1E1E1E),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: Icon(
+                Icons.person_outline,
+                size: 80,
+                color: primaryGold.withOpacity(_adminTapCount > 0 ? 0.8 : 0.5),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -546,6 +607,173 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // Build Teacher Pending/Rejected Status View
+  Widget _buildTeacherPendingOrRejected() {
+    final verificationStatus = _teacherProfile?['verification_status'] ?? 'pending';
+    
+    if (verificationStatus == 'pending') {
+      return _buildPendingStatus();
+    } else {
+      // Rejected or other status
+      return _buildRejectedStatus();
+    }
+  }
+
+  Widget _buildPendingStatus() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.schedule,
+                size: 64,
+                color: Color(0xFFD4AF37),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Hồ sơ đang chờ duyệt',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Hồ sơ giáo viên của bạn đang được xem xét.\nChúng tôi sẽ thông báo kết quả trong vòng 72 giờ làm việc.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => _handleLogout(),
+              icon: const Icon(Icons.logout, size: 20),
+              label: Text(
+                'Đăng xuất',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E1E1E),
+                foregroundColor: Colors.white70,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRejectedStatus() {
+    final rejectedReason = _teacherProfile?['rejected_reason'] ?? 'Không đủ điều kiện';
+    
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.redAccent.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.cancel_outlined,
+                size: 64,
+                color: Colors.redAccent,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Hồ sơ không được duyệt',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Lý do: $rejectedReason',
+              style: GoogleFonts.inter(
+                color: Colors.redAccent,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Vui lòng liên hệ với chúng tôi để được hỗ trợ.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => _handleLogout(),
+              icon: const Icon(Icons.logout, size: 20),
+              label: Text(
+                'Đăng xuất',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E1E1E),
+                foregroundColor: Colors.white70,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -389,5 +389,64 @@ class SupabaseService {
       print('Error incrementing shares: $e');
     }
   }
+
+  // --- ADMIN METHODS ---
+
+  /// Approve all pending teacher profiles (for testing/admin purposes)
+  Future<Map<String, dynamic>> approveAllPendingTeachers() async {
+    try {
+      // Get count of pending teachers
+      final pendingTeachers = await _client
+          .from('teacher_profiles')
+          .select()
+          .eq('verification_status', 'pending');
+
+      final count = pendingTeachers.length;
+
+      if (count == 0) {
+        return {
+          'success': true,
+          'message': 'Không có giáo viên nào đang chờ duyệt',
+          'count': 0,
+        };
+      }
+
+      // Update all to approved
+      await _client
+          .from('teacher_profiles')
+          .update({
+            'verification_status': 'approved',
+            'approved_at': DateTime.now().toIso8601String(),
+          })
+          .eq('verification_status', 'pending');
+
+      return {
+        'success': true,
+        'message': 'Đã duyệt $count giáo viên thành công',
+        'count': count,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Lỗi: $e',
+        'count': 0,
+      };
+    }
+  }
+
+  /// Get all teacher profiles with their verification status (for admin)
+  Future<List<Map<String, dynamic>>> getAllTeacherProfiles() async {
+    try {
+      final response = await _client
+          .from('teacher_profiles')
+          .select()
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('Error fetching all teacher profiles: $e');
+      return [];
+    }
+  }
 }
 

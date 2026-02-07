@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/supabase_service.dart';
 import '../main.dart';
+import 'teacher_dashboard_screen.dart';
 
 class TeacherVerificationSetupScreen extends StatefulWidget {
   // Data from Step 1
@@ -381,10 +382,10 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
           ),
         );
         
-        // Navigate to main feed
+        // Navigate to Teacher Dashboard
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
+          MaterialPageRoute(builder: (context) => const TeacherDashboardScreen()),
           (route) => false,
         );
       }
