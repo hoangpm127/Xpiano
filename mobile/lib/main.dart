@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/supabase_service.dart';
 import 'models/feed_item.dart';
+import 'screens/booking_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +78,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   final SupabaseService _supabaseService = SupabaseService();
   late Future<List<FeedItem>> _feedFuture;
   final PageController _pageController = PageController(keepPage: true);
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -93,103 +96,134 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: FutureBuilder<List<FeedItem>>(
-        future: _feedFuture,
-        builder: (context, snapshot) {
-          // Loading State
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _selectedIndex,
+            children: [
+              // 0: Feed
+              FutureBuilder<List<FeedItem>>(
+                future: _feedFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: primaryGold),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Lỗi: ${snapshot.error}', style: GoogleFonts.inter(color: Colors.white)));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('Chưa có bài viết nào', style: GoogleFonts.inter(color: Colors.white)));
+                  }
+                  return _buildFeedView(snapshot.data!);
+                },
               ),
-            );
-          }
+              
+              // 1: Search
+              const Center(child: Text("Khám phá", style: TextStyle(color: Colors.white))),
+              
+              // 2: Add
+              const Center(child: Text("Tạo mới", style: TextStyle(color: Colors.white))),
 
-          // Error State
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.red,
-                    size: 60,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Lỗi kết nối Supabase',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
+              // 3: Message
+              const Center(child: Text("Hộp thư", style: TextStyle(color: Colors.white))),
 
-          // Empty State
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.inbox_outlined,
-                    color: Colors.white54,
-                    size: 60,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Chưa có bài viết nào',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Data Loaded - Show Feed
-          final feedItems = snapshot.data!;
-          return _buildFeedView(feedItems);
-        },
+              // 4: Profile
+              const ProfileScreen(),
+            ],
+          ),
+          
+          // Bottom Navigation
+          _buildBottomNavigation(context),
+        ],
       ),
     );
   }
 
   Widget _buildFeedView(List<FeedItem> feedItems) {
-    return Stack(
-      children: [
-        // PageView for TikTok-style vertical scroll
-        PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          itemCount: feedItems.length,
-          pageSnapping: true,
-          itemBuilder: (context, index) {
-            final item = feedItems[index];
-            return _buildFeedPage(item, key: ValueKey('feed_${item.id}'));
-          },
-        ),
-        
-        // Custom Bottom Navigation (Always visible)
-        _buildBottomNavigation(context),
-      ],
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      itemCount: feedItems.length + 1,
+      pageSnapping: true,
+      physics: const ClampingScrollPhysics(),
+      itemBuilder: (context, index) {
+        if (index == feedItems.length) {
+          return _buildEndOfFeedPage();
+        }
+        final item = feedItems[index];
+        return _buildFeedPage(item, key: ValueKey('feed_${item.id}'));
+      },
+    );
+  }
+
+  // End of Feed Page
+  Widget _buildEndOfFeedPage() {
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: primaryGold,
+                  size: 80,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Bạn đã xem hết!',
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Đã xem tất cả bài viết mới',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Refresh button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _feedFuture = _supabaseService.getSocialFeed();
+                      _pageController.jumpToPage(0);
+                    });
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: Text(
+                    'Làm mới',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -641,7 +675,12 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const BookingScreen()),
+                            );
+                          },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -769,14 +808,16 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                   _buildNavItem(
                     icon: Icons.home,
                     label: 'Home',
-                    isActive: true,
+                    isActive: _selectedIndex == 0,
                     isDark: isDark,
+                    onTap: () => setState(() => _selectedIndex = 0),
                   ),
                   _buildNavItem(
                     icon: Icons.explore,
                     label: 'Khám phá',
-                    isActive: false,
+                    isActive: _selectedIndex == 1,
                     isDark: isDark,
+                    onTap: () => setState(() => _selectedIndex = 1),
                   ),
                   // Center Add Button
                   Padding(
@@ -807,7 +848,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () {},
+                          onTap: () => setState(() => _selectedIndex = 2),
                           child: const Center(
                             child: Icon(
                               Icons.add,
@@ -820,16 +861,18 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                     ),
                   ),
                   _buildNavItem(
-                    icon: Icons.calendar_today,
-                    label: 'Booking',
-                    isActive: false,
+                    icon: Icons.message_outlined,
+                    label: 'Hộp thư',
+                    isActive: _selectedIndex == 3,
                     isDark: isDark,
+                    onTap: () => setState(() => _selectedIndex = 3),
                   ),
                   _buildNavItem(
                     icon: Icons.person_outline,
                     label: 'Hồ sơ',
-                    isActive: false,
+                    isActive: _selectedIndex == 4,
                     isDark: isDark,
+                    onTap: () => setState(() => _selectedIndex = 4),
                   ),
                 ],
               ),
@@ -847,34 +890,39 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     required String label,
     required bool isActive,
     required bool isDark,
+    required VoidCallback onTap,
   }) {
     final color = isActive 
         ? primaryGold 
         : (isDark ? const Color(0xFF808080) : const Color(0xFF9E9E9E));
     
-    return SizedBox(
-      width: 60,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 60,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
               color: color,
+              size: 24,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
