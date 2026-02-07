@@ -8,6 +8,7 @@ import 'models/feed_item.dart';
 import 'screens/booking_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/splash_screen.dart';
+import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +52,8 @@ class PianoSocialFeedApp extends StatelessWidget {
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      // Set PianoFeedScreen as the initial screen for Guest Mode experience
+      home: const PianoFeedScreen(), 
     );
   }
 }
@@ -74,17 +76,45 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   late Future<List<FeedItem>> _feedFuture;
   final PageController _pageController = PageController(keepPage: true);
   int _selectedIndex = 0;
+  
+  // Guest Mode State (Default to true for testing flow)
+  bool _isGuest = true; 
 
   @override
   void initState() {
     super.initState();
     _feedFuture = _supabaseService.getSocialFeed();
+    // Check actual auth state
+    final session = Supabase.instance.client.auth.currentSession;
+    _isGuest = session == null;
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  // Helper to check login before action
+  void _checkLogin(VoidCallback action) {
+    if (_isGuest) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const LoginBottomSheet(),
+      ).then((_) {
+        // Re-check auth status after sheet closes (in case they logged in)
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          setState(() {
+            _isGuest = false;
+          });
+        }
+      });
+    } else {
+      action();
+    }
   }
 
   @override
@@ -427,22 +457,25 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                       Positioned(
                         bottom: 0,
                         left: 10,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1.5,
+                        child: GestureDetector(
+                           onTap: () => _checkLogin(() {}),
+                           child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
                             ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 10,
+                            child: const Center(
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 10,
+                              ),
                             ),
                           ),
                         ),
@@ -452,27 +485,42 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Like Button
-                _buildSidebarAction(
-                  icon: Icons.favorite_border,
-                  label: item.formattedLikes,
+                GestureDetector(
+                  onTap: () => _checkLogin(() {
+                    // TODO: Implement Like logic
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Liked!')));
+                  }),
+                  child: _buildSidebarAction(
+                    icon: Icons.favorite_border,
+                    label: item.formattedLikes,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Comment Button
-                _buildSidebarAction(
-                  icon: Icons.chat_bubble_outline,
-                  label: item.formattedComments,
+                GestureDetector(
+                  onTap: () => _checkLogin(() {}),
+                   child: _buildSidebarAction(
+                    icon: Icons.chat_bubble_outline,
+                    label: item.formattedComments,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Bookmark Button
-                _buildSidebarAction(
-                  icon: Icons.bookmark_border,
-                  label: item.formattedShares,
+                GestureDetector(
+                   onTap: () => _checkLogin(() {}),
+                   child: _buildSidebarAction(
+                    icon: Icons.bookmark_border,
+                    label: item.formattedShares,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Share Button
-                _buildSidebarAction(
-                  icon: Icons.reply,
-                  label: '',
+                GestureDetector(
+                   onTap: () => _checkLogin(() {}),
+                   child: _buildSidebarAction(
+                    icon: Icons.reply,
+                    label: '',
+                  ),
                 ),
               ],
             ),
@@ -670,12 +718,12 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {
+                          onTap: () => _checkLogin(() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const BookingScreen()),
                             );
-                          },
+                          }),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -727,7 +775,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {},
+                          onTap: () => _checkLogin(() {}),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

@@ -23,11 +23,12 @@ class SupabaseService {
     required String email,
     required String password,
     required String fullName,
+    required String role,
   }) async {
     return await _client.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': fullName},
+      data: {'full_name': fullName, 'role': role},
     );
   }
 

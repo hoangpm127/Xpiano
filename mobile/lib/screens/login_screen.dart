@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // Import flutter_animate
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/supabase_service.dart';
 import '../main.dart';
 import 'register_screen.dart';
@@ -17,7 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _supabaseService = SupabaseService();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // State for password visibility
+  bool _isPasswordVisible = false;
+  int _selectedRoleIndex = 0; // 0: Guest/Student, 1: Teacher
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -43,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.')),
+          SnackBar(content: Text('Đăng nhập thất bại. Kiểm tra lại thông tin.')),
         );
       }
     } finally {
@@ -55,190 +56,302 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      body: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1E1E1E), Color(0xFF121212)],
-              ),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          // Subtle texture effect using gradient to mimic depth 
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.5,
+            colors: [
+              const Color(0xFF1E1E1E),
+              const Color(0xFF121212),
+            ],
           ),
-          SafeArea(
+        ),
+        child: SafeArea(
+          child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 60),
-                  const Icon(Icons.music_note, color: Color(0xFFD4AF37), size: 48)
-                      .animate().fadeIn(duration: 600.ms).scale(),
-                  const SizedBox(height: 24),
+                  // 1. Header: Logo
                   Text(
-                    'Chào mừng\ntrở lại',
+                    'SPIANO',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: const Color(0xFFD4AF37), // Gold
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      height: 1.2,
+                      letterSpacing: 4,
                     ),
-                  ).animate().fadeIn(delay: 200.ms).slideX(),
+                  ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2),
                   const SizedBox(height: 8),
                   Text(
-                    'Đăng nhập để tiếp tục trải nghiệm cùng Xpiano',
-                    style: GoogleFonts.inter(color: Colors.white60, fontSize: 16),
-                  ).animate().fadeIn(delay: 400.ms),
-                  const SizedBox(height: 60),
+                    'Học đàn & Cà phê',
+                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                  ).animate().fadeIn(delay: 200.ms),
                   
-                  // Email Field
+                  const SizedBox(height: 40),
+
+                  // 2. Role Switcher (Guest/Student vs Teacher)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        _buildRoleTab('Khách/Học viên', 0),
+                        _buildRoleTab('Giáo viên', 1),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 300.ms),
+                  
+                  const SizedBox(height: 32),
+
+                  // 3. Input Form
                   _buildTextField(
                     controller: _emailController,
-                    label: 'Email',
-                    hint: 'example@gmail.com',
-                    icon: Icons.email_outlined,
-                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2),
-                  const SizedBox(height: 20),
+                    hint: 'Số điện thoại / Email',
+                    icon: Icons.person_outline,
+                  ).animate().fadeIn(delay: 400.ms),
                   
-                  // Password Field
+                  const SizedBox(height: 16),
+                  
                   _buildTextField(
                     controller: _passwordController,
-                    label: 'Mật khẩu',
-                    hint: '••••••••',
+                    hint: 'Mật khẩu',
                     icon: Icons.lock_outline,
                     isPassword: !_isPasswordVisible,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                         color: Colors.white54,
+                        size: 20,
                       ),
                       onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                     ),
-                  ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2),
-                  const SizedBox(height: 48),
+                  ).animate().fadeIn(delay: 500.ms),
                   
-                  // Login Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE6C86E), Color(0xFFBF953F)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFD4AF37).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                  // Secondary Links
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                           onPressed: () {}, 
+                           style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                           child: Text(
+                            'Quên mật khẩu?',
+                            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
                           ),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                          child: Text(
+                            'Đăng nhập bằng OTP',
+                            style: GoogleFonts.inter(color: const Color(0xFFD4AF37), fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 600.ms),
+
+                  const SizedBox(height: 12),
+
+                  // 4. Primary Action: Login Button
+                  _buildPrimaryButton(
+                    text: 'ĐĂNG NHẬP',
+                    onPressed: _isLoading ? null : _handleLogin,
+                    isLoading: _isLoading,
+                  ).animate().fadeIn(delay: 700.ms).scale(),
+
+                  const SizedBox(height: 40),
+
+                  // 5. Footer: Social Login
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.white12)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Hoặc đăng nhập bằng',
+                              style: GoogleFonts.inter(color: Colors.white38, fontSize: 12),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.white12)),
                         ],
                       ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildSocialIcon(Icons.g_mobiledata), // Google
+                          const SizedBox(width: 24),
+                          _buildSocialIcon(Icons.apple), // Apple
+                          const SizedBox(width: 24),
+                          _buildSocialIcon(Icons.chat_bubble_outline), // Zalo
+                        ],
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 800.ms),
+
+                  const SizedBox(height: 40),
+
+                  // 6. Register Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Chưa có tài khoản? ',
+                        style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          );
+                        },
+                        child: Text(
+                          'Đăng ký',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFD4AF37), // Gold
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
-                        onPressed: _isLoading ? null : _handleLogin,
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : Text(
-                                'ĐĂNG NHẬP',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
                       ),
-                    ),
-                  ).animate().fadeIn(delay: 1000.ms).scale(),
-                  const SizedBox(height: 24),
-                  
-                  // Register Link
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                        );
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          text: 'Chưa có tài khoản? ',
-                          style: GoogleFonts.inter(color: Colors.white60),
-                          children: [
-                            TextSpan(
-                              text: 'Đăng ký ngay',
-                              style: TextStyle(
-                                color: const Color(0xFFD4AF37),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 1200.ms),
+                    ],
+                  ).animate().fadeIn(delay: 900.ms),
                 ],
               ),
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleTab(String title, int index) {
+    final isSelected = _selectedRoleIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedRoleIndex = index),
+        child: AnimatedContainer(
+          duration: 300.ms,
+          margin: const EdgeInsets.all(2),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF333333) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5), width: 1) : null,
+          ),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: isSelected ? const Color(0xFFD4AF37) : Colors.white54,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
-    required String label,
     required String hint,
     required IconData icon,
     bool isPassword = false,
     Widget? suffixIcon,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+    return TextField(
+      controller: controller,
+      obscureText: isPassword,
+      style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 14),
+        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: controller,
-          obscureText: isPassword,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white24),
-            prefixIcon: Icon(icon, color: const Color(0xFFD4AF37), size: 20),
-            suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFD4AF37)),
-            ),
-          ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFD4AF37)),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton({
+    required String text,
+    required VoidCallback? onPressed,
+    required bool isLoading,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE6C86E), Color(0xFFBF953F)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4AF37).withOpacity(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onPressed: onPressed,
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+            : Text(
+                text,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  letterSpacing: 1.0,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildSocialIcon(IconData icon) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Icon(icon, color: Colors.white, size: 24),
     );
   }
 }
