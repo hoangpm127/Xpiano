@@ -1,8 +1,11 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
-import '../main.dart'; // Import to navigate to Home
+import '../services/email_service.dart';
+import '../main.dart';
 // import 'teacher_onboarding_screen.dart'; // Can be used later if teacher specific flow needed
 import 'login_screen.dart';
 
@@ -15,7 +18,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _dobController = TextEditingController();
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -29,16 +32,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _agreedToTerms = false;
   bool _otpSent = false;
   
-  // 0: Guest/Student (Khách/Học viên), 1: Teacher (Giáo viên)
   int _selectedRoleIndex = 0; 
+  DateTime? _selectedDate;
+  String? _generatedOtp; // Store generated OTP
 
   Future<void> _handleRegister() async {
     // Validate inputs
     if (_nameController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
+        _emailController.text.isEmpty ||
         _dobController.text.isEmpty ||
         _passwordController.text.isEmpty ||
-        (_otpSent && _otpController.text.isEmpty)) {
+        _otpController.text.isEmpty) { // OTP is mandatory
        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
       );
@@ -60,23 +64,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isLoading = true);
-    
-    // Simulate API delay
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
-      // NOTE: Using email signup for now as Supabase default.
-      final fakeEmail = '${_phoneController.text.trim()}@spiano.app';
-      
-      // Determine role based on selected tab
+      final email = _emailController.text.trim();
+      final userOtp = _otpController.text.trim();
       final role = _selectedRoleIndex == 0 ? 'student' : 'teacher';
 
+      // 1. Verify OTP first (Must be sent before)
+      if (!_otpSent || _generatedOtp == null) {
+          throw Exception('Vui lòng bấm "Gửi mã" trước');
+      }
+
+      // Check OTP match
+      if (userOtp != _generatedOtp) {
+        throw Exception('Mã xác thực không đúng');
+      }
+      
+      // 2. Register Directly (Since OTP is verified internally)
       await _supabaseService.signUp(
-        email: fakeEmail, 
+        email: email, 
         password: _passwordController.text,
         fullName: _nameController.text,
-        role: role, // Pass the correct role
+        role: role,
       );
+      
+      // Note for User: Ensure 'Confirm Email' is disabled in Supabase Dashboard
+      // Auth -> Providers -> Email -> [ ] Confirm email
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,18 +112,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _sendOtp() {
-    if (_phoneController.text.isEmpty) {
+  Future<void> _sendOtp() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số điện thoại')),
+        const SnackBar(content: Text('Vui lòng nhập Email hợp lệ')),
       );
       return;
     }
-    setState(() => _otpSent = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mã xác thực đã gửi (Giả lập: 1234)')),
-    );
+
+    setState(() => _isLoading = true);
+    
+    // Generate Random OTP (6 digits)
+    final random = Random();
+    final otp = (100000 + random.nextInt(900000)).toString(); // Generates 6 digit code
+    _generatedOtp = otp; // Save for verification
+
+    try {
+      // Use EmailService with custom SMTP
+      await EmailService.sendOtp(email, otp);
+      
+      setState(() => _otpSent = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mã xác thực đã gửi về Email (Kiểm tra cả Spam)')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gửi mã thất bại: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(2000), // Default to year 2000
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFD4AF37), // Gold
+              onPrimary: Colors.black,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1E1E1E),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        // Format dd/MM/yyyy
+        _dobController.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -180,20 +248,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  _buildTextField(
-                    controller: _dobController,
-                    hint: 'Ngày sinh (DD/MM/YYYY)',
-                    icon: Icons.calendar_today_outlined,
-                    keyboardType: TextInputType.datetime,
+                  // Date Picker Field
+                  GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: AbsorbPointer( // Prevent manual editing
+                      child: _buildTextField(
+                        controller: _dobController,
+                        hint: 'Ngày sinh (DD/MM/YYYY)',
+                        icon: Icons.calendar_today_outlined,
+                      ),
+                    ),
                   ).animate().fadeIn(delay: 350.ms),
 
                   const SizedBox(height: 16),
                   
+                  // Email Field (Changed from Phone)
                   _buildTextField(
-                    controller: _phoneController,
-                    hint: 'Số điện thoại',
-                    icon: Icons.phone_android,
-                    keyboardType: TextInputType.phone,
+                    controller: _emailController,
+                    hint: 'Email',
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
                   ).animate().fadeIn(delay: 400.ms),
 
                   const SizedBox(height: 16),
@@ -217,8 +291,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: TextButton(
-                          onPressed: _sendOtp,
-                          child: Text(
+                          onPressed: _isLoading ? null : _sendOtp,
+                          child: _isLoading && !_otpSent 
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFD4AF37)))
+                              : Text(
                             _otpSent ? 'Gửi lại' : 'Gửi mã',
                             style: GoogleFonts.inter(
                               color: const Color(0xFFD4AF37),

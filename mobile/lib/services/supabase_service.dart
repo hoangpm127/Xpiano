@@ -36,9 +36,42 @@ class SupabaseService {
     await _client.auth.signOut();
   }
 
-  Future<void> updateUserMetadata({required String fullName}) async {
+  Future<void> updateUserMetadata({required String fullName, required String role}) async {
     await _client.auth.updateUser(
-      UserAttributes(data: {'full_name': fullName}),
+      UserAttributes(data: {'full_name': fullName, 'role': role}),
+    );
+  }
+  
+  // --- OTP METHODS ---
+
+  // 1. Send OTP to Email
+  Future<void> sendEmailOtp(String email) async {
+    await _client.auth.signInWithOtp(
+      email: email,
+      shouldCreateUser: true, // Create user if not exists
+    );
+  }
+
+  // 2. Verify OTP and Login
+  Future<AuthResponse> verifyEmailOtp(String email, String token) async {
+    return await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.email, // or OtpType.magiclink depending on config
+    );
+  }
+
+  // 3. Finalize Registration (Set Password & Metadata) calling update after verify
+  Future<UserResponse> updateRegisterInfo({
+    required String password,
+    required String fullName,
+    required String role,
+  }) async {
+    return await _client.auth.updateUser(
+      UserAttributes(
+        password: password,
+        data: {'full_name': fullName, 'role': role},
+      ),
     );
   }
 
