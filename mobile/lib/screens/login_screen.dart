@@ -33,7 +33,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _supabaseService.signIn(email: email, password: password);
+      final response = await _supabaseService.signIn(email: email, password: password);
+      
+      // Verify Role
+      final user = Supabase.instance.client.auth.currentUser;
+      final userRole = user?.userMetadata?['role'] ?? 'student'; // Default to student if undefined
+      
+      // Check if role matches selected tab
+      // Tab 0: Student/Guest -> allows 'student'
+      // Tab 1: Teacher -> allows 'teacher'
+      
+      bool isRoleValid = false;
+      if (_selectedRoleIndex == 0) {
+        if (userRole == 'student') isRoleValid = true;
+      } else {
+        if (userRole == 'teacher') isRoleValid = true;
+      }
+
+      if (!isRoleValid) {
+        // Logout immediately if role mismatch
+        await _supabaseService.signOut();
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       // Ensure widget is still mounted before navigating
       if (mounted) {
         Navigator.pushReplacement(

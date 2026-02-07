@@ -28,6 +28,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _agreedToTerms = false;
   bool _otpSent = false;
+  
+  // 0: Guest/Student (Khách/Học viên), 1: Teacher (Giáo viên)
+  int _selectedRoleIndex = 0; 
 
   Future<void> _handleRegister() async {
     // Validate inputs
@@ -56,7 +59,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Temporary: Direct Registration Logic (since OTP integration requires backend)
     setState(() => _isLoading = true);
     
     // Simulate API delay
@@ -64,20 +66,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       // NOTE: Using email signup for now as Supabase default.
-      // In production, phone auth requires provider setup.
-      // We'll treat phone as email for MVP: phone@spiano.app
       final fakeEmail = '${_phoneController.text.trim()}@spiano.app';
       
+      // Determine role based on selected tab
+      final role = _selectedRoleIndex == 0 ? 'student' : 'teacher';
+
       await _supabaseService.signUp(
         email: fakeEmail, 
         password: _passwordController.text,
         fullName: _nameController.text,
-        role: 'student', // Default to student for general registration
+        role: role, // Pass the correct role
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng ký thành công!')),
+          SnackBar(content: Text('Đăng ký tài khoản ${role == 'teacher' ? 'Giáo viên' : 'Học viên'} thành công!')),
         );
         Navigator.pushAndRemoveUntil(
           context,
@@ -151,7 +154,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 32),
 
-                  // 2. Form Fields
+                  // 2. Role Switcher (New)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        _buildRoleTab('Khách/Học viên', 0),
+                        _buildRoleTab('Giáo viên', 1),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 250.ms),
+
+                  const SizedBox(height: 24),
+
+                  // 3. Form Fields
                   _buildTextField(
                     controller: _nameController,
                     hint: 'Họ và tên',
@@ -340,6 +360,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ).animate().fadeIn(delay: 800.ms),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleTab(String title, int index) {
+    final isSelected = _selectedRoleIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedRoleIndex = index),
+        child: AnimatedContainer(
+          duration: 300.ms,
+          margin: const EdgeInsets.all(2),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF333333) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5), width: 1) : null,
+          ),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: isSelected ? const Color(0xFFD4AF37) : Colors.white54,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 14,
             ),
           ),
         ),

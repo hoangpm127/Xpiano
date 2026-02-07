@@ -33,8 +33,32 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
 
     setState(() => _isLoading = true);
     try {
-      // Use the email input for login (assuming phone/email are handled the same or just email for now)
-      await _supabaseService.signIn(email: email, password: password);
+      final response = await _supabaseService.signIn(email: email, password: password);
+      
+      // Verify Role
+      final user = Supabase.instance.client.auth.currentUser;
+      final userRole = user?.userMetadata?['role'] ?? 'student'; // Default to student
+      
+      // Check role match
+      bool isRoleValid = false;
+      if (_selectedRoleIndex == 0) {
+        if (userRole == 'student') isRoleValid = true;
+      } else {
+        if (userRole == 'teacher') isRoleValid = true;
+      }
+      
+      if (!isRoleValid) {
+        await _supabaseService.signOut();
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       
       if (mounted) {
         Navigator.pop(context, true); // Return true to indicate success
