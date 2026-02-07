@@ -7,6 +7,7 @@ import 'services/supabase_service.dart';
 import 'models/feed_item.dart';
 import 'screens/booking_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,19 +45,13 @@ class PianoSocialFeedApp extends StatelessWidget {
       title: 'Piano Social Feed',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: const Color(0xFFD4AF37),
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: GoogleFonts.interTextTheme(),
-      ),
-      darkTheme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFFD4AF37),
         scaffoldBackgroundColor: const Color(0xFF121212),
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        useMaterial3: true,
       ),
-      themeMode: ThemeMode.dark,
-      home: const PianoFeedScreen(),
+      home: const SplashScreen(),
     );
   }
 }

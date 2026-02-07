@@ -7,6 +7,42 @@ import '../models/booking.dart';
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
 
+
+  // --- AUTH METHODS ---
+
+  User? get currentUser => _client.auth.currentUser;
+
+  Future<AuthResponse> signIn({required String email, required String password}) async {
+    return await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    return await _client.auth.signUp(
+      email: email,
+      password: password,
+      data: {'full_name': fullName},
+    );
+  }
+
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+  }
+
+  Future<void> updateUserMetadata({required String fullName}) async {
+    await _client.auth.updateUser(
+      UserAttributes(data: {'full_name': fullName}),
+    );
+  }
+
+  // --- FEED METHODS ---
+
   // Fetch Social Feed
   Future<List<FeedItem>> getSocialFeed() async {
     try {
@@ -14,10 +50,6 @@ class SupabaseService {
           .from('social_feed')
           .select()
           .order('created_at', ascending: false);
-
-      if (response == null) {
-        return [];
-      }
 
       final List<FeedItem> feeds = (response as List)
           .map((item) => FeedItem.fromJson(item as Map<String, dynamic>))
@@ -27,64 +59,6 @@ class SupabaseService {
     } catch (e) {
       print('Error fetching social feed: $e');
       return [];
-    }
-  }
-
-  // Fetch Pianos (Optional Category Filter)
-  Future<List<Piano>> getPianos({String? category}) async {
-    try {
-      var query = _client.from('pianos').select().order('rating', ascending: false);
-      
-      if (category != null && category != 'All') {
-        // Correct way to apply filter on PostgrestFilterBuilder
-        // Since we cannot reassign query because types might mismatch if not cast properly
-        // Let's chain it differently or use a different approach.
-        // PostgrestFilterBuilder <T>
-        final response = await _client
-            .from('pianos')
-            .select()
-            .eq('category', category)
-            .order('rating', ascending: false);
-            
-        final List<Piano> pianos = (response as List)
-            .map((item) => Piano.fromJson(item as Map<String, dynamic>))
-            .toList();
-        return pianos;
-      } else {
-         final response = await _client
-            .from('pianos')
-            .select()
-            .order('rating', ascending: false);
-            
-        final List<Piano> pianos = (response as List)
-            .map((item) => Piano.fromJson(item as Map<String, dynamic>))
-            .toList();
-        return pianos;
-      }
-    } catch (e) {
-      print('Error fetching pianos: $e');
-      return [];
-    }
-  }
-
-  // Create Booking
-  Future<void> createBooking({
-    required int pianoId,
-    required DateTime startTime,
-    required DateTime endTime,
-    required double totalPrice,
-  }) async {
-    try {
-      await _client.from('bookings').insert({
-        'piano_id': pianoId,
-        'start_time': startTime.toIso8601String(),
-        'end_time': endTime.toIso8601String(),
-        'total_price': totalPrice,
-        'status': 'confirmed',
-      });
-    } catch (e) {
-      print('Error creating booking: $e');
-      throw e;
     }
   }
 
@@ -99,52 +73,76 @@ class SupabaseService {
             .toList());
   }
 
-  // Increment like count
-  Future<void> incrementLikes(int feedId, int currentCount) async {
+  // --- PIANO METHODS ---
+
+  // Fetch Pianos (Optional Category Filter)
+  Future<List<Piano>> getPianos({String? category}) async {
     try {
-      await _client
-          .from('social_feed')
-          .update({'likes_count': currentCount + 1})
-          .eq('id', feedId);
+      if (category != null && category != 'All') {
+        final response = await _client
+            .from('pianos')
+            .select()
+            .eq('category', category)
+            .order('rating', ascending: false);
+            
+        return (response as List)
+            .map((item) => Piano.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+         final response = await _client
+            .from('pianos')
+            .select()
+            .order('rating', ascending: false);
+            
+        return (response as List)
+            .map((item) => Piano.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
     } catch (e) {
-      print('Error incrementing likes: $e');
+      print('Error fetching pianos: $e');
+      return [];
     }
   }
 
-  // Add comment count
-  Future<void> incrementComments(int feedId, int currentCount) async {
-    try {
-      await _client
-          .from('social_feed')
-          .update({'comments_count': currentCount + 1})
-          .eq('id', feedId);
-    } catch (e) {
-      print('Error incrementing comments: $e');
-    }
-  }
+  // --- BOOKING METHODS ---
 
-  // Add share count
-  Future<void> incrementShares(int feedId, int currentCount) async {
+  // Create Booking
+  Future<void> createBooking({
+    required int pianoId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required double totalPrice,
+  }) async {
     try {
-      await _client
-          .from('social_feed')
-          .update({'shares_count': currentCount + 1})
-          .eq('id', feedId);
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      await _client.from('bookings').insert({
+        'user_id': user.id, // Securely use the auth user id
+        'piano_id': pianoId,
+        'start_time': startTime.toIso8601String(),
+        'end_time': endTime.toIso8601String(),
+        'total_price': totalPrice,
+        'status': 'confirmed',
+      });
     } catch (e) {
-      print('Error incrementing shares: $e');
+      print('Error creating booking: $e');
+      throw e;
     }
   }
 
   // Get User Bookings
   Future<List<Booking>> getMyBookings() async {
     try {
+      final user = _client.auth.currentUser;
+      if (user == null) return [];
+
       final response = await _client
           .from('bookings')
           .select('*, pianos(name, image_url)')
+          .eq('user_id', user.id) // Filter by owner
           .order('start_time', ascending: false);
       
-      if (response == null) return [];
-
       final List<Booking> bookings = (response as List)
           .map((item) => Booking.fromJson(item as Map<String, dynamic>))
           .toList();
@@ -168,4 +166,40 @@ class SupabaseService {
       throw e;
     }
   }
+
+  // --- INTERACTION METHODS ---
+
+  Future<void> incrementLikes(int feedId, int currentCount) async {
+    try {
+      await _client
+          .from('social_feed')
+          .update({'likes_count': currentCount + 1})
+          .eq('id', feedId);
+    } catch (e) {
+      print('Error incrementing likes: $e');
+    }
+  }
+
+  Future<void> incrementComments(int feedId, int currentCount) async {
+    try {
+      await _client
+          .from('social_feed')
+          .update({'comments_count': currentCount + 1})
+          .eq('id', feedId);
+    } catch (e) {
+      print('Error incrementing comments: $e');
+    }
+  }
+
+  Future<void> incrementShares(int feedId, int currentCount) async {
+    try {
+      await _client
+          .from('social_feed')
+          .update({'shares_count': currentCount + 1})
+          .eq('id', feedId);
+    } catch (e) {
+      print('Error incrementing shares: $e');
+    }
+  }
 }
+

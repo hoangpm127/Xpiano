@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/booking.dart';
 import '../services/supabase_service.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -78,6 +79,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn đăng xuất?', style: GoogleFonts.inter(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _supabaseService.signOut();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,6 +170,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
+    final user = _supabaseService.currentUser;
+    final fullName = user?.userMetadata?['full_name'] ?? 'Người dùng';
+    final email = user?.email ?? '';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -149,6 +185,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                onPressed: _handleLogout,
+                icon: const Icon(Icons.logout, color: Colors.redAccent),
+              ),
+            ],
+          ),
           const CircleAvatar(
             radius: 40,
             backgroundImage: NetworkImage('https://via.placeholder.com/150'), // Placeholder avatar
@@ -156,11 +201,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Linh Piano',
+            fullName,
             style: GoogleFonts.inter(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email,
+            style: GoogleFonts.inter(
+              color: Colors.white54,
+              fontSize: 14,
             ),
           ),
           const SizedBox(height: 4),
