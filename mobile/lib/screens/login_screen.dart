@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await _supabaseService.signIn(email: email, password: password);
+      await _supabaseService.signIn(email: email, password: password);
       
       // Verify Role
       final user = Supabase.instance.client.auth.currentUser;
@@ -57,8 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}'),
+              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}. Vui lòng chọn đúng tab và đăng nhập lại!'),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -72,10 +73,36 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
         );
       }
+    } on AuthException catch (e) {
+      // Handle Supabase Auth specific errors
+      String errorMessage = 'Đăng nhập thất bại';
+      
+      if (e.message.contains('Invalid login credentials')) {
+        errorMessage = 'Email hoặc mật khẩu không đúng!';
+      } else if (e.message.contains('Email not confirmed')) {
+        errorMessage = 'Email chưa được xác nhận. Check hộp thư của bạn!';
+      } else if (e.message.contains('rate limit')) {
+        errorMessage = 'Quá nhiều yêu cầu. Vui lòng thử lại sau!';
+      } else {
+        errorMessage = 'Lỗi: ${e.message}';
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng nhập thất bại. Kiểm tra lại thông tin.')),
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

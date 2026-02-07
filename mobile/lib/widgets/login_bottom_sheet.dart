@@ -34,7 +34,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await _supabaseService.signIn(email: email, password: password);
+      await _supabaseService.signIn(email: email, password: password);
       
       // Verify Role
       final user = Supabase.instance.client.auth.currentUser;
@@ -53,7 +53,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}'),
+              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}. Vui lòng chọn đúng tab!'),
               backgroundColor: Colors.red,
             ),
           );
@@ -62,12 +62,44 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
       }
       
       if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đăng nhập thành công!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
         Navigator.pop(context, true); // Return true to indicate success
+      }
+    } on AuthException catch (e) {
+      // Handle Supabase Auth specific errors
+      String errorMessage = 'Đăng nhập thất bại';
+      
+      if (e.message.contains('Invalid login credentials')) {
+        errorMessage = 'Email hoặc mật khẩu không đúng!';
+      } else if (e.message.contains('Email not confirmed')) {
+        errorMessage = 'Email chưa được xác nhận!';
+      } else {
+        errorMessage = e.message;
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng nhập thất bại: ${e.toString()}')),
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

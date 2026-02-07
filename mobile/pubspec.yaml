@@ -41,6 +41,7 @@ dependencies:
   intl: ^0.19.0
   flutter_animate: ^4.5.2
   mailer: ^6.6.0
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:

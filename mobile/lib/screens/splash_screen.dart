@@ -24,17 +24,12 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+    
+    // Always go to PianoFeedScreen (supports both logged-in and guest mode)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
+    );
   }
 
   @override

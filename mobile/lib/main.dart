@@ -52,8 +52,8 @@ class PianoSocialFeedApp extends StatelessWidget {
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      // Set PianoFeedScreen as the initial screen for Guest Mode experience
-      home: const PianoFeedScreen(), 
+      // Use SplashScreen to check session on app start
+      home: const SplashScreen(), 
     );
   }
 }
@@ -77,7 +77,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   final PageController _pageController = PageController(keepPage: true);
   int _selectedIndex = 0;
   
-  // Guest Mode State (Default to true for testing flow)
+  // Guest Mode State
   bool _isGuest = true; 
 
   @override
@@ -85,8 +85,14 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     super.initState();
     _feedFuture = _supabaseService.getSocialFeed();
     // Check actual auth state
+    _checkAuthState();
+  }
+  
+  void _checkAuthState() {
     final session = Supabase.instance.client.auth.currentSession;
-    _isGuest = session == null;
+    setState(() {
+      _isGuest = session == null;
+    });
   }
 
   @override
@@ -103,13 +109,13 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (context) => const LoginBottomSheet(),
-      ).then((_) {
-        // Re-check auth status after sheet closes (in case they logged in)
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          setState(() {
-            _isGuest = false;
-          });
+      ).then((result) {
+        // Re-check auth status after sheet closes
+        _checkAuthState();
+        
+        // If login was successful, execute the action
+        if (result == true) {
+          action();
         }
       });
     } else {

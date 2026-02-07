@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/booking.dart';
 import '../services/supabase_service.dart';
 import 'login_screen.dart';
+import 'register_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,7 +26,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchBookings();
+    _checkAuthAndFetch();
+  }
+  
+  void _checkAuthAndFetch() {
+    final user = _supabaseService.currentUser;
+    if (user == null) {
+      // User is guest, don't fetch bookings
+      setState(() {
+        _isLoading = false;
+      });
+    } else {
+      _fetchBookings();
+    }
   }
 
   Future<void> _fetchBookings() async {
@@ -112,10 +125,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = _supabaseService.currentUser;
+    
     return Scaffold(
       backgroundColor: backgroundDark,
       body: SafeArea(
-        child: Column(
+        child: user == null 
+            ? _buildGuestView() 
+            : Column(
           children: [
             // 1. Profile Header
             _buildProfileHeader(),
@@ -162,6 +179,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                         ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildGuestView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_outline,
+              size: 80,
+              color: primaryGold.withOpacity(0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Chào mừng đến Spiano!',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Đăng nhập để xem hồ sơ và lịch sử đặt đàn của bạn',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE6C86E), Color(0xFFBF953F)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryGold.withOpacity(0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  ).then((_) {
+                    // Refresh profile after login
+                    if (mounted) {
+                      setState(() {
+                        _checkAuthAndFetch();
+                      });
+                    }
+                  });
+                },
+                child: Text(
+                  'ĐĂNG NHẬP',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                ).then((_) {
+                  // Refresh profile after registration
+                  if (mounted) {
+                    setState(() {
+                      _checkAuthAndFetch();
+                    });
+                  }
+                });
+              },
+              child: Text(
+                'Chưa có tài khoản? Đăng ký ngay',
+                style: GoogleFonts.inter(
+                  color: primaryGold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),

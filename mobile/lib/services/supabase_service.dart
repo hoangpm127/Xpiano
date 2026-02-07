@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/feed_item.dart';
 import '../models/piano.dart';
@@ -19,17 +20,37 @@ class SupabaseService {
     );
   }
 
+  // Check if email already exists using RPC function
+  Future<bool> emailExists(String email) async {
+    try {
+      // Call RPC function on Supabase to check email in auth.users
+      final result = await _client.rpc('check_email_exists', 
+        params: {'email_to_check': email}
+      );
+      return result == true;
+    } catch (e) {
+      print('Error checking email: $e');
+      // If RPC not found, return false to allow registration attempt
+      // Duplicate will be caught during signUp
+      return false;
+    }
+  }
+
   Future<AuthResponse> signUp({
     required String email,
     required String password,
     required String fullName,
     required String role,
   }) async {
-    return await _client.auth.signUp(
+    // Sign up with email auto-confirm disabled (will be handled by OTP)
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
       data: {'full_name': fullName, 'role': role},
+      emailRedirectTo: null, // Disable email confirmation link
     );
+    
+    return response;
   }
 
   Future<void> signOut() async {
@@ -73,6 +94,139 @@ class SupabaseService {
         data: {'full_name': fullName, 'role': role},
       ),
     );
+  }
+
+  // --- STORAGE METHODS ---
+
+  // Upload image to Supabase Storage
+  Future<String> uploadImage({
+    required Uint8List fileBytes,
+    required String fileName,
+    required String folder, // e.g., 'avatars', 'id_cards', 'certificates'
+    int maxRetries = 3,
+    Duration timeout = const Duration(seconds: 60), // Default 60s
+  }) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final filePath = '$userId/$folder/$fileName';
+    
+    // Check file size (max 50MB)
+    final fileSizeMB = fileBytes.length / (1024 * 1024);
+    if (fileSizeMB > 50) {
+      throw Exception('File quá lớn (${fileSizeMB.toStringAsFixed(1)}MB). Tối đa 50MB');
+    }
+    
+    // Retry logic with exponential backoff
+    int attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        await _client.storage
+            .from('teacher-profiles')
+            .uploadBinary(filePath, fileBytes)
+            .timeout(timeout);
+
+        return _client.storage
+            .from('teacher-profiles')
+            .getPublicUrl(filePath);
+      } catch (e) {
+        attempts++;
+        if (attempts >= maxRetries) {
+          rethrow; // Throw error after max retries
+        }
+        // Wait before retry (exponential backoff: 2s, 4s, 8s...)
+        await Future.delayed(Duration(seconds: 2 * attempts));
+      }
+    }
+    
+    throw Exception('Upload failed after $maxRetries attempts');
+  }
+
+  // Delete image from Supabase Storage
+  Future<void> deleteImage(String url) async {
+    try {
+      // Extract file path from public URL
+      final uri = Uri.parse(url);
+      final pathSegments = uri.pathSegments;
+      final bucketIndex = pathSegments.indexOf('teacher-profiles');
+      if (bucketIndex != -1 && pathSegments.length > bucketIndex + 1) {
+        final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
+        await _client.storage.from('teacher-profiles').remove([filePath]);
+      }
+    } catch (e) {
+      print('Error deleting image: $e');
+    }
+  }
+
+  // --- TEACHER PROFILE METHODS ---
+
+  // Create teacher profile
+  Future<Map<String, dynamic>> createTeacherProfile(Map<String, dynamic> profileData) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final data = {
+      'user_id': userId,
+      ...profileData,
+    };
+
+    final response = await _client
+        .from('teacher_profiles')
+        .insert(data)
+        .select()
+        .single();
+
+    return response as Map<String, dynamic>;
+  }
+
+  // Update teacher profile
+  Future<Map<String, dynamic>> updateTeacherProfile(Map<String, dynamic> profileData) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final response = await _client
+        .from('teacher_profiles')
+        .update(profileData)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    return response as Map<String, dynamic>;
+  }
+
+  // Get teacher profile by user ID
+  Future<Map<String, dynamic>?> getTeacherProfile() async {
+    final userId = currentUser?.id;
+    if (userId == null) return null;
+
+    try {
+      final response = await _client
+          .from('teacher_profiles')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      return response as Map<String, dynamic>?;
+    } catch (e) {
+      print('Error fetching teacher profile: $e');
+      return null;
+    }
+  }
+
+  // Get all approved teacher profiles
+  Future<List<Map<String, dynamic>>> getApprovedTeachers() async {
+    try {
+      final response = await _client
+          .from('teacher_profiles')
+          .select()
+          .eq('verification_status', 'approved')
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      print('Error fetching approved teachers: $e');
+      return [];
+    }
   }
 
   // --- FEED METHODS ---

@@ -22,6 +22,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String _selectedCategory = 'All';
   List<Piano> _pianos = [];
   bool _isLoading = true;
+  bool _isGuest = false;
 
   // Categories
   final List<String> _categories = ['All', 'Grand Piano', 'Upright Piano', 'Digital Piano'];
@@ -29,7 +30,15 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    _checkAuth();
     _fetchPianos();
+  }
+  
+  void _checkAuth() {
+    final user = _supabaseService.currentUser;
+    setState(() {
+      _isGuest = user == null;
+    });
   }
 
   Future<void> _fetchPianos() async {
@@ -49,6 +58,19 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _showBookingSheet(BuildContext context, Piano piano) {
+    // Double check auth before opening sheet
+    final user = _supabaseService.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đăng nhập để đặt đàn!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.pop(context); // Go back to feed
+      return;
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

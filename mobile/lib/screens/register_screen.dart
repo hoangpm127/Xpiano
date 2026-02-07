@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
 import '../services/email_service.dart';
 import '../main.dart';
-// import 'teacher_onboarding_screen.dart'; // Can be used later if teacher specific flow needed
+import 'teacher_profile_setup_screen.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -35,6 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _selectedRoleIndex = 0; 
   DateTime? _selectedDate;
   String? _generatedOtp; // Store generated OTP
+  DateTime? _otpSentTime; // Store OTP sent time for timeout
 
   Future<void> _handleRegister() async {
     // Validate inputs
@@ -68,11 +69,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final email = _emailController.text.trim();
       final userOtp = _otpController.text.trim();
+      final password = _passwordController.text;
       final role = _selectedRoleIndex == 0 ? 'student' : 'teacher';
 
       // 1. Verify OTP first (Must be sent before)
-      if (!_otpSent || _generatedOtp == null) {
+      if (!_otpSent || _generatedOtp == null || _otpSentTime == null) {
           throw Exception('Vui lòng bấm "Gửi mã" trước');
+      }
+      
+      // Check OTP timeout (5 minutes)
+      final now = DateTime.now();
+      final difference = now.difference(_otpSentTime!);
+      if (difference.inMinutes > 5) {
+        throw Exception('Mã xác thực đã hết hạn. Vui lòng gửi lại!');
       }
 
       // Check OTP match
@@ -80,31 +89,153 @@ class _RegisterScreenState extends State<RegisterScreen> {
         throw Exception('Mã xác thực không đúng');
       }
       
-      // 2. Register Directly (Since OTP is verified internally)
-      await _supabaseService.signUp(
+      // 2. Check if email already exists in Supabase
+      // We'll catch this in the AuthException handler
+      
+      // 3. Register with Supabase (OTP already verified)
+      final response = await _supabaseService.signUp(
         email: email, 
-        password: _passwordController.text,
+        password: password,
         fullName: _nameController.text,
         role: role,
       );
       
-      // Note for User: Ensure 'Confirm Email' is disabled in Supabase Dashboard
-      // Auth -> Providers -> Email -> [ ] Confirm email
+      // Check if signup was successful
+      if (response.user == null) {
+        throw Exception('Đăng ký thất bại. Vui lòng thử lại!');
+      }
+      
+      // Auto-login after successful signup
+      // Since OTP is verified, we can log them in immediately
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng ký tài khoản ${role == 'teacher' ? 'Giáo viên' : 'Học viên'} thành công!')),
+          SnackBar(
+            content: Text('Đăng ký tài khoản ${role == 'teacher' ? 'Giáo viên' : 'Học viên'} thành công!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
-          (route) => false,
-        );
+        
+        // Navigate to Teacher Profile Setup if teacher, otherwise go to feed
+        if (role == 'teacher') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const TeacherProfileSetupScreen()),
+            (route) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } on AuthException catch (e) {
+      // Handle Supabase Auth specific errors
+      String errorMessage = 'Lỗi đăng ký';
+      
+      print('AuthException: ${e.message}'); // Debug
+      
+      if (e.message.contains('User already registered') || 
+          e.message.contains('already been registered') ||
+          e.message.contains('already exists')) {
+        errorMessage = '❌ Email này đã được sử dụng!\n\nVui lòng sử dụng email khác hoặc đăng nhập nếu bạn đã có tài khoản.';
+      } else if (e.message.contains('Invalid email') || e.message.contains('invalid_email')) {
+        errorMessage = 'Email không hợp lệ! Vui lòng nhập đúng định dạng email.';
+      } else if (e.message.contains('Password') || e.message.contains('password')) {
+        errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự!';
+      } else if (e.message.contains('rate limit') || e.message.contains('too many')) {
+        errorMessage = 'Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút!';
+      } else if (e.message.contains('Email not confirmed')) {
+        // This shouldn't happen with our flow, but just in case
+        errorMessage = 'Lỗi xác thực. Vui lòng thử lại!';
+      } else {
+        errorMessage = 'Lỗi: ${e.message}';
+      }
+      
+      if (mounted) {
+        // Show dialog for duplicate email (more prominent)
+        if (errorMessage.contains('đã được sử dụng')) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Email Đã Tồn Tại',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Email này đã được sử dụng để đăng ký tài khoản.\n\nVui lòng:\n• Sử dụng email khác\n• Hoặc đăng nhập nếu bạn đã có tài khoản',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Thử Email Khác',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'Đăng Nhập',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFD4AF37),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Show snackbar for other errors
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: ${e.toString()}')),
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -123,12 +254,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     
-    // Generate Random OTP (6 digits)
-    final random = Random();
-    final otp = (100000 + random.nextInt(900000)).toString(); // Generates 6 digit code
-    _generatedOtp = otp; // Save for verification
-
     try {
+      // Generate OTP và gửi (check duplicate sẽ được xử lý khi signUp)
+      final random = Random();
+      final otp = (100000 + random.nextInt(900000)).toString(); // Generates 6 digit code
+      _generatedOtp = otp; // Save for verification
+      _otpSentTime = DateTime.now(); // Save sent time
+      
       // Use EmailService with custom SMTP
       await EmailService.sendOtp(email, otp);
       
@@ -141,7 +273,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gửi mã thất bại: ${e.toString()}')),
+          SnackBar(content: Text('Lỗi: ${e.toString()}')),
         );
       }
     } finally {
