@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Piano Social Feed Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#D4AF37", // Gold
+                        "primary-dark": "#B39129",
+                        "background-light": "#FFFFFF",
+                        "background-dark": "#121212",
+                        "overlay-black": "rgba(0, 0, 0, 0.4)",
+                        "glass": "rgba(255, 255, 255, 0.15)",
+                        "glass-dark": "rgba(0, 0, 0, 0.3)",
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                        '3xl': '2rem',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(212, 175, 55, 0.3)',
+                    }
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .text-shadow {
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #E6C86E 0%, #BF953F 50%, #E6C86E 100%);
+        }
+        .glass-panel {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-black text-white font-sans antialiased h-screen w-screen overflow-hidden flex flex-col relative">
+<div class="absolute inset-0 z-0">
+<img alt="Playing piano hands close up warm lighting" class="w-full h-full object-cover object-center brightness-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKq9sywUNG4x1UvmUoDJH0IHinHs169Ou4pVMU7exbCYyq86YfzCJQi3dSoup_4I3zcg4gIbNqUd12c5gvCijdj_VDq4IuhSO5RewKd88jCLE-aPYmIhGKUUec3LP3rubvYlMN6FJ_rSpjDzKHs1ltGcUNBF02ADcBclxI30Fzdn1R1-ESyxBllH1XjC1nRqN955AJNNoJAJLYTthhJG7KyrNeHw-OrNgkmFAGVQ5tkJR66TA8wi6srhR39HoAcvgH6menJ3Rs1ik"/>
+<div class="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+</div>
+<div class="absolute top-14 left-4 z-10 flex flex-col items-start gap-3">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full border border-white/30 overflow-hidden shadow-lg">
+<img alt="LinhPiano Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKxlmxJns_LWxi89WF78U-TfnXTwLu9T8hgKEWppSMOeEVBeqrS2s6Wkl1edsYRe8bmmIP99B_lDmnnlBwy2T0yeDeXIcsORvRQuk1nonb7q2nE56fLzoC5RJgwpEsyv162N97iAz_0frjU5AX0z5_BzfQ2PnqkK3gx_PToTg2aStGczauBZViIvYZh7LONx8kORiS-CvQiBh3yOA9KyRId22zMgFiqGuJpnshCe1Tny2HTD4W7V3w_3cOyd2strmvpmy_G6Yi-Kg"/>
+</div>
+<span class="font-semibold text-lg text-white text-shadow tracking-wide">LinhPiano</span>
+</div>
+<div class="glass-panel bg-white/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm border border-white/10">
+<span class="material-icons-round text-yellow-400 text-sm">verified</span>
+<span class="text-xs font-medium text-white/90">Trải nghiệm thật</span>
+</div>
+</div>
+<div class="absolute right-3 bottom-36 z-20 flex flex-col items-center">
+<div class="glass-panel bg-black/20 dark:bg-black/40 border border-white/10 rounded-full py-4 w-14 flex flex-col items-center gap-6 shadow-lg backdrop-blur-md">
+<div class="relative w-10 h-10 mb-2">
+<div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+<img alt="Creator Avatar Small" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR6xMydmxeePPvOdZwqaXwD2qQ2HcZrmstyoVlDT5HGulO1czOuLSyRESDRNOHexvju6CvBcLnWxq2X_kh2X_cLOzF6HNgHEVwmRusukOlfDPlRHB3N2hCJq0w4Osq0IWr7vSiCQo1gGVUpU2bXqysXxX9EvrOSd_2O3oq1-ckOiD0bbKeEi-xbkOa6gRRLYOxy69Y9SB8RGiJsLu0QB6jeLBVawOK-IaE14xCGxog4IF-CMXGeK2fe1kZ74CQILbjEhtsuXQeAvo"/>
+</div>
+<div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-red-500 rounded-full w-4 h-4 flex items-center justify-center border border-white">
+<span class="material-icons-round text-[10px] text-white">add</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1">
+<button class="text-white hover:scale-110 transition-transform active:scale-95">
+<span class="material-icons-round text-3xl drop-shadow-md">favorite_border</span>
+</button>
+<span class="text-xs font-medium text-white drop-shadow-md">1.2K</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<button class="text-white hover:scale-110 transition-transform active:scale-95">
+<span class="material-icons-round text-3xl drop-shadow-md">chat_bubble_outline</span>
+</button>
+<span class="text-xs font-medium text-white drop-shadow-md">345</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<button class="text-white hover:scale-110 transition-transform active:scale-95">
+<span class="material-icons-round text-3xl drop-shadow-md">bookmark_border</span>
+</button>
+<span class="text-xs font-medium text-white drop-shadow-md">89</span>
+</div>
+<div class="flex flex-col items-center gap-1 mt-1">
+<button class="text-white hover:scale-110 transition-transform active:scale-95">
+<span class="material-icons-round text-3xl drop-shadow-md">reply</span>
+</button>
+</div>
+</div>
+</div>
+<div class="absolute bottom-24 left-0 w-full z-20 px-4 pb-4">
+<div class="text-shadow mb-3 pr-16">
+<p class="text-white text-[15px] leading-snug mb-2">
+                30 giây luyện ngón giúp tay mềm hơn 🎹 <br/>
+<span class="font-bold text-white/90">#luyenngon #piano #xpiano #beginner</span>
+</p>
+<div class="inline-flex items-center gap-1 bg-white/20 dark:bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-md mb-2">
+<span class="material-icons-round text-[12px] text-primary">location_on</span>
+<span class="text-[11px] text-white">Hà Nội</span>
+</div>
+<div class="flex items-center gap-2 mb-3 overflow-hidden w-2/3">
+<span class="material-icons-round text-sm text-white">music_note</span>
+<div class="flex-1 overflow-hidden whitespace-nowrap">
+<span class="text-sm text-white block">Âm thanh gốc • @AnNhien</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 w-full pr-4">
+<button class="flex-1 bg-white hover:bg-gray-100 text-black rounded-full h-11 flex items-center justify-center gap-2 shadow-lg transition-all border border-gray-200">
+<span class="material-icons-round text-lg text-gray-800">piano</span>
+<span class="font-bold text-sm">Mượn Đàn</span>
+</button>
+<button class="flex-1 gold-gradient text-black rounded-full h-11 flex items-center justify-center gap-2 shadow-glow transition-all active:scale-95">
+<span class="material-icons-round text-lg text-black/80">school</span>
+<span class="font-bold text-sm">Học Ngay</span>
+</button>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 w-full z-30 bg-background-light dark:bg-background-dark rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.2)] px-2 pb-6 pt-3 border-t border-gray-100 dark:border-white/5">
+<div class="flex justify-between items-end px-2">
+<button class="flex flex-col items-center gap-1 w-1/5 group">
+<span class="material-icons-round text-2xl text-primary group-hover:scale-110 transition-transform">home</span>
+<span class="text-[10px] font-medium text-primary">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-1/5 group">
+<span class="material-icons-round text-2xl text-gray-400 dark:text-gray-500 group-hover:text-primary transition-colors">explore</span>
+<span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Khám phá</span>
+</button>
+<div class="w-1/5 flex justify-center -mt-4">
+<button class="w-12 h-12 gold-gradient rounded-xl shadow-lg shadow-yellow-500/30 flex items-center justify-center transform transition-transform hover:-translate-y-1 active:scale-95">
+<span class="material-icons-round text-white text-3xl">add</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 w-1/5 group">
+<span class="material-icons-round text-2xl text-gray-400 dark:text-gray-500 group-hover:text-primary transition-colors">calendar_today</span>
+<span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Booking</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-1/5 group">
+<span class="material-icons-round text-2xl text-gray-400 dark:text-gray-500 group-hover:text-primary transition-colors">person_outline</span>
+<span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Hồ sơ</span>
+</button>
+</div>
+<div class="w-full flex justify-center mt-4">
+<div class="w-32 h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+</div>
+</div>
+
+</body></html>
