@@ -2,9 +2,18 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/supabase_service.dart';
+import 'models/feed_item.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://pjgjusdmzxrhgiptfvbg.supabase.co',
+    anonKey: 'sb_publishable_GMnCRFvRGqElGLerTiE-3g_YpGm-KoW',
+  );
   
   // Make the status bar transparent for full-screen immersive experience
   SystemChrome.setSystemUIOverlayStyle(
@@ -50,53 +59,198 @@ class PianoSocialFeedApp extends StatelessWidget {
   }
 }
 
-class PianoFeedScreen extends StatelessWidget {
+class PianoFeedScreen extends StatefulWidget {
   const PianoFeedScreen({super.key});
 
+  @override
+  State<PianoFeedScreen> createState() => _PianoFeedScreenState();
+}
+
+class _PianoFeedScreenState extends State<PianoFeedScreen> {
   // Color Palette
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
   static const Color backgroundDark = Color(0xFF121212);
   static const Color backgroundLight = Color(0xFFFFFFFF);
 
+  final SupabaseService _supabaseService = SupabaseService();
+  late Future<List<FeedItem>> _feedFuture;
+  final PageController _pageController = PageController(keepPage: true);
+
+  @override
+  void initState() {
+    super.initState();
+    _feedFuture = _supabaseService.getSocialFeed();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
+      body: FutureBuilder<List<FeedItem>>(
+        future: _feedFuture,
+        builder: (context, snapshot) {
+          // Loading State
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: primaryGold,
+              ),
+            );
+          }
+
+          // Error State
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Lỗi kết nối Supabase',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    snapshot.error.toString(),
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Empty State
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.inbox_outlined,
+                    color: Colors.white54,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chưa có bài viết nào',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Data Loaded - Show Feed
+          final feedItems = snapshot.data!;
+          return _buildFeedView(feedItems);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFeedView(List<FeedItem> feedItems) {
+    return Stack(
+      children: [
+        // PageView for TikTok-style vertical scroll
+        PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          itemCount: feedItems.length,
+          pageSnapping: true,
+          itemBuilder: (context, index) {
+            final item = feedItems[index];
+            return _buildFeedPage(item, key: ValueKey('feed_${item.id}'));
+          },
+        ),
+        
+        // Custom Bottom Navigation (Always visible)
+        _buildBottomNavigation(context),
+      ],
+    );
+  }
+
+  Widget _buildFeedPage(FeedItem item, {required Key key}) {
+    return Container(
+      key: key,
+      child: Stack(
         children: [
           // Background Image with Overlay
-          _buildBackground(),
+          _buildBackground(item.mediaUrl, key: ValueKey('bg_${item.id}')),
           
-          // Top User Badge
-          _buildTopUserBadge(),
+          // Top Verified Badge (if user is verified)
+          if (item.isVerified) _buildTopUserBadge(item),
           
           // Right Sidebar
-          _buildRightSidebar(),
+          _buildRightSidebar(item),
           
           // Bottom Content Area
-          _buildBottomContent(),
-          
-          // Custom Bottom Navigation
-          _buildBottomNavigation(context),
+          _buildBottomContent(item),
         ],
       ),
     );
   }
 
   // Background with Image and Gradient Overlay
-  Widget _buildBackground() {
+  Widget _buildBackground(String mediaUrl, {required Key key}) {
     return Positioned.fill(
       child: Stack(
         children: [
           // Background Image
           Image.network(
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCKq9sywUNG4x1UvmUoDJH0IHinHs169Ou4pVMU7exbCYyq86YfzCJQi3dSoup_4I3zcg4gIbNqUd12c5gvCijdj_VDq4IuhSO5RewKd88jCLE-aPYmIhGKUUec3LP3rubvYlMN6FJ_rSpjDzKHs1ltGcUNBF02ADcBclxI30Fzdn1R1-ESyxBllH1XjC1nRqN955AJNNoJAJLYTthhJG7KyrNeHw-OrNgkmFAGVQ5tkJR66TA8wi6srhR39HoAcvgH6menJ3Rs1ik',
+            key: key,
+            mediaUrl.isNotEmpty ? mediaUrl : 'https://via.placeholder.com/1080x1920/000000/FFFFFF?text=No+Image',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
             color: Colors.black.withOpacity(0.25), // brightness-75 effect
             colorBlendMode: BlendMode.darken,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Icon(Icons.error, color: Colors.white54, size: 60),
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.black,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: primaryGold,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
           ),
           // Bottom Gradient Overlay
           Positioned(
@@ -123,63 +277,15 @@ class PianoFeedScreen extends StatelessWidget {
     );
   }
 
-  // Top User Badge (Avatar + Name + Verified Badge)
-  Widget _buildTopUserBadge() {
+  // Top User Badge (Verified Badge)
+  Widget _buildTopUserBadge(FeedItem item) {
     return Positioned(
       top: 56,
       left: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Info Row
-          Row(
-            children: [
-              // Avatar
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    'https://lh3.googleusercontent.com/aida-public/AB6AXuDKxlmxJns_LWxi89WF78U-TfnXTwLu9T8hgKEWppSMOeEVBeqrS2s6Wkl1edsYRe8bmmIP99B_lDmnnlBwy2T0yeDeXIcsORvRQuk1nonb7q2nE56fLzoC5RJgwpEsyv162N97iAz_0frjU5AX0z5_BzfQ2PnqkK3gx_PToTg2aStGczauBZViIvYZh7LONx8kORiS-CvQiBh3yOA9KyRId22zMgFiqGuJpnshCe1Tny2HTD4W7V3w_3cOyd2strmvpmy_G6Yi-Kg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Username
-              Text(
-                'LinhPiano',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.6),
-                      offset: const Offset(0, 1),
-                      blurRadius: 3,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+
           // Verified Badge
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
@@ -212,7 +318,7 @@ class PianoFeedScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Trải nghiệm thật',
+                      item.authorName,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -230,7 +336,7 @@ class PianoFeedScreen extends StatelessWidget {
   }
 
   // Right Sidebar with Actions
-  Widget _buildRightSidebar() {
+  Widget _buildRightSidebar(FeedItem item) {
     return Positioned(
       right: 12,
       bottom: 144,
@@ -278,8 +384,14 @@ class PianoFeedScreen extends StatelessWidget {
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            'https://lh3.googleusercontent.com/aida-public/AB6AXuCR6xMydmxeePPvOdZwqaXwD2qQ2HcZrmstyoVlDT5HGulO1czOuLSyRESDRNOHexvju6CvBcLnWxq2X_kh2X_cLOzF6HNgHEVwmRusukOlfDPlRHB3N2hCJq0w4Osq0IWr7vSiCQo1gGVUpU2bXqysXxX9EvrOSd_2O3oq1-ckOiD0bbKeEi-xbkOa6gRRLYOxy69Y9SB8RGiJsLu0QB6jeLBVawOK-IaE14xCGxog4IF-CMXGeK2fe1kZ74CQILbjEhtsuXQeAvo',
+                            item.authorAvatar.isNotEmpty ? item.authorAvatar : 'https://via.placeholder.com/150',
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey,
+                                child: const Icon(Icons.person, color: Colors.white),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -313,19 +425,19 @@ class PianoFeedScreen extends StatelessWidget {
                 // Like Button
                 _buildSidebarAction(
                   icon: Icons.favorite_border,
-                  label: '1.2K',
+                  label: item.formattedLikes,
                 ),
                 const SizedBox(height: 24),
                 // Comment Button
                 _buildSidebarAction(
                   icon: Icons.chat_bubble_outline,
-                  label: '345',
+                  label: item.formattedComments,
                 ),
                 const SizedBox(height: 24),
                 // Bookmark Button
                 _buildSidebarAction(
                   icon: Icons.bookmark_border,
-                  label: '89',
+                  label: item.formattedShares,
                 ),
                 const SizedBox(height: 24),
                 // Share Button
@@ -380,7 +492,7 @@ class PianoFeedScreen extends StatelessWidget {
   }
 
   // Bottom Content Area
-  Widget _buildBottomContent() {
+  Widget _buildBottomContent(FeedItem item) {
     return Positioned(
       bottom: 96,
       left: 0,
@@ -398,7 +510,7 @@ class PianoFeedScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '30 giây luyện ngón giúp tay mềm hơn 🎹',
+                    item.caption,
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       color: Colors.white,
@@ -411,86 +523,95 @@ class PianoFeedScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '#luyenngon #piano #xpiano #beginner',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.9),
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.6),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
+                  if (item.hashtags.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      item.hashtags.map((tag) => '#$tag').join(' '),
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.9),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 8),
             // Location Badge
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+            if (item.location != null && item.location!.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: primaryGold,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          item.location!,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ),
+            if (item.location != null && item.location!.isNotEmpty)
+              const SizedBox(height: 8),
+            // Music Info
+            if (item.musicCredit != null && item.musicCredit!.isNotEmpty)
+              Builder(
+                builder: (context) => SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.66,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        Icons.location_on,
-                        color: primaryGold,
-                        size: 12,
+                        Icons.music_note,
+                        color: Colors.white,
+                        size: 14,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Hà Nội',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.musicCredit!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            // Music Info
-            Builder(
-              builder: (context) => SizedBox(
-                width: MediaQuery.of(context).size.width * 0.66,
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.music_note,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Âm thanh gốc • @AnNhien',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 12),
             // Action Buttons
             Padding(
@@ -713,21 +834,8 @@ class PianoFeedScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             // Bottom Indicator
-            Center(
-              child: Container(
-                width: 128,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark 
-                      ? const Color(0xFF3A3A3A) 
-                      : const Color(0xFFD1D1D1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
