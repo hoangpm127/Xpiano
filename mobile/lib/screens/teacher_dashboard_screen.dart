@@ -374,11 +374,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.grey[400],
+              Flexible(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey[400],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
               if (showArrow)
@@ -397,6 +401,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               fontWeight: FontWeight.bold,
               color: valueColor,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
           if (subtitle.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -406,6 +412,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 fontSize: 11,
                 color: Colors.grey[500],
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ],

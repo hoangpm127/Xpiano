@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'student_detail_screen.dart';
 
 class StudentManagementScreen extends StatefulWidget {
   const StudentManagementScreen({super.key});
@@ -451,18 +452,41 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           // Header Row
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFD4AF37).withOpacity(0.5),
-                    width: 2,
-                  ),
-                  image: DecorationImage(
-                    image: NetworkImage(student.avatar),
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          StudentDetailScreen(
+                        studentName: student.name,
+                        studentAvatar: student.avatar,
+                        level: student.level,
+                      ),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        return SlideTransition(position: offsetAnimation, child: child);
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withOpacity(0.5),
+                      width: 2,
+                    ),
+                    image: DecorationImage(
+                      image: NetworkImage(student.avatar),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -680,13 +704,23 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
               const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Xem tiến độ ${student.name}',
-                        style: GoogleFonts.inter(color: Colors.white),
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          StudentDetailScreen(
+                        studentName: student.name,
+                        studentAvatar: student.avatar,
+                        level: student.level,
                       ),
-                      backgroundColor: const Color(0xFF1E1E1E),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        return SlideTransition(position: offsetAnimation, child: child);
+                      },
                     ),
                   );
                 },
