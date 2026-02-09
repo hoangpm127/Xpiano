@@ -853,8 +853,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
 
   // Custom Bottom Navigation
   Widget _buildBottomNavigation(BuildContext context) {
-    // Always use light mode for internal screens
-    const isDark = false;
+    // Dark footer only on Home tab
+    final isDark = _selectedIndex == 0;
     
     return Positioned(
       bottom: 0,
@@ -869,7 +869,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
           ),
           border: Border(
             top: BorderSide(
-              color: Colors.grey[200]!,
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200]!,
               width: 1,
             ),
           ),
@@ -977,9 +977,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    final color = isActive 
-        ? primaryGold 
-        : const Color(0xFF9E9E9E); // Light gray for inactive
+    final color = isActive
+        ? primaryGold
+        : (isDark ? const Color(0xFFB0B0B0) : const Color(0xFF9E9E9E)); // Inactive
     
     return GestureDetector(
       onTap: onTap,

@@ -10,12 +10,15 @@ class TeacherReviewsScreen extends StatefulWidget {
 }
 
 class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
-  // Spiano Dark Luxury Colors
+  // Light Mode Palette
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color cardDark = Color(0xFF1E1E1E);
-  static const Color cardDarker = Color(0xFF2E2E2E);
+  static const Color backgroundDark = Color(0xFFF7F7F7);
+  static const Color cardDark = Color(0xFFFFFFFF);
+  static const Color cardDarker = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
 
   // Rating data
   final double overallRating = 4.9;
@@ -31,7 +34,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundDark,
       body: SafeArea(
         child: Stack(
           children: [
@@ -96,7 +99,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
         color: backgroundDark,
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.05),
+            color: borderLight,
             width: 1,
           ),
         ),
@@ -113,13 +116,13 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                 color: cardDark,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
+                  color: borderLight,
                   width: 1,
                 ),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Colors.white,
+                color: textDark,
                 size: 18,
               ),
             ),
@@ -134,7 +137,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
@@ -151,7 +154,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                 color: cardDark,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
+                  color: borderLight,
                   width: 1,
                 ),
               ),
@@ -200,7 +203,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 64,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: textDark,
                   height: 1,
                   letterSpacing: -2,
                 ),
@@ -212,7 +215,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[500],
+                    color: textMuted,
                   ),
                 ),
               ),
@@ -244,7 +247,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
           ).animate().fadeIn(delay: 200.ms),
         ],
@@ -287,7 +290,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         
@@ -322,7 +325,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ),
               Icon(
@@ -378,7 +381,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[400],
+              color: textMuted,
             ),
           ),
         ),
@@ -399,7 +402,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
         ),
@@ -480,7 +483,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             TextButton(
@@ -588,7 +591,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                         color: cardDarker,
                         child: Icon(
                           Icons.person,
-                          color: Colors.grey[600],
+                          color: textMuted,
                         ),
                       );
                     },
@@ -608,7 +611,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -647,7 +650,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[500],
+                  color: textMuted,
                 ),
               ),
             ],
@@ -661,7 +664,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: Colors.grey[300],
+              color: textMuted,
               height: 1.5,
             ),
           ),
@@ -683,7 +686,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
         color: backgroundDark,
         border: Border(
           top: BorderSide(
-            color: Colors.white.withOpacity(0.05),
+            color: borderLight,
             width: 1,
           ),
         ),
@@ -704,7 +707,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -784,7 +787,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ],
@@ -793,7 +796,7 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
           'Đánh giá được tính dựa trên phản hồi thực tế từ học viên sau mỗi buổi học. Điểm cao giúp bạn nổi bật hơn trong danh sách giáo viên.',
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: Colors.grey[300],
+            color: textMuted,
             height: 1.5,
           ),
         ),
@@ -814,3 +817,4 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
     );
   }
 }
+

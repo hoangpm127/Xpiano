@@ -19,7 +19,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   // Constants
   static const Color primaryGold = Color(0xFFD4AF37);
-  static const Color backgroundDark = Color(0xFF121212);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   final SupabaseService _supabaseService = SupabaseService();
 
   // State
@@ -74,13 +79,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: Text('Xác nhận hủy', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Bạn có chắc chắn muốn hủy lịch đặt này không?', style: GoogleFonts.inter(color: Colors.white70)),
+        backgroundColor: cardLight,
+        title: Text('Xác nhận hủy', style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn hủy lịch đặt này không?', style: GoogleFonts.inter(color: textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+            child: Text('Không', style: GoogleFonts.inter(color: textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -113,13 +118,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Bạn có chắc chắn muốn đăng xuất?', style: GoogleFonts.inter(color: Colors.white70)),
+        backgroundColor: cardLight,
+        title: Text('Đăng xuất', style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn đăng xuất?', style: GoogleFonts.inter(color: textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+            child: Text('Không', style: GoogleFonts.inter(color: textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -147,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // If loading, show loading indicator
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundLight,
         body: Center(
           child: CircularProgressIndicator(color: primaryGold),
         ),
@@ -161,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     // Otherwise show normal profile screen with Scaffold
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: user == null 
             ? _buildGuestView()
@@ -184,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     'Lịch sử đặt đàn',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: textDark,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -204,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : RefreshIndicator(
                           onRefresh: _fetchBookings,
                           color: primaryGold,
-                          backgroundColor: Colors.black,
+                          backgroundColor: cardLight,
                           child: ListView.separated(
                             padding: const EdgeInsets.all(16),
                             itemCount: _bookings.length,
@@ -245,10 +250,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SnackBar(
                       content: Text(
                         '${5 - _adminTapCount} lần nữa để mở Admin...',
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: textDark),
                       ),
                       duration: const Duration(milliseconds: 500),
-                      backgroundColor: const Color(0xFF1E1E1E),
+                      backgroundColor: cardLight,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -264,7 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Chào mừng đến Spiano!',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textDark,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -274,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Đăng nhập để xem hồ sơ và lịch sử đặt đàn của bạn',
               style: GoogleFonts.inter(
-                color: Colors.white70,
+                color: textMuted,
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
@@ -369,12 +374,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: cardLight,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -396,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             fullName,
             style: GoogleFonts.inter(
-              color: Colors.white,
+              color: textDark,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -405,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             email,
             style: GoogleFonts.inter(
-              color: Colors.white54,
+              color: textMuted,
               fontSize: 14,
             ),
           ),
@@ -502,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           value,
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: textDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -511,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           label,
           style: GoogleFonts.inter(
-            color: Colors.white54,
+            color: textMuted,
             fontSize: 12,
           ),
         ),
@@ -532,7 +544,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: backgroundDark,
+              color: cardAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: primaryGold.withOpacity(0.3),
@@ -549,7 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             label,
             style: GoogleFonts.inter(
-              color: Colors.white70,
+              color: textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -564,11 +576,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.calendar_today, size: 60, color: Colors.white.withOpacity(0.2)),
+          Icon(Icons.calendar_today, size: 60, color: textMuted.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
             'Chưa có lịch đặt nào',
-            style: GoogleFonts.inter(color: Colors.white54, fontSize: 16),
+            style: GoogleFonts.inter(color: textMuted, fontSize: 16),
           ),
         ],
       ),
@@ -597,7 +609,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         statusText = 'Hoàn thành';
         break;
       default:
-        statusColor = Colors.white;
+        statusColor = textMuted;
         statusText = booking.status;
     }
 
@@ -610,9 +622,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: borderLight),
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -628,8 +640,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 width: 60, height: 60,
-                color: Colors.grey[800],
-                child: const Icon(Icons.music_note, color: Colors.white54),
+                color: cardAlt,
+                child: const Icon(Icons.music_note, color: textMuted),
               ),
             ),
           ),
@@ -644,7 +656,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   booking.pianoName ?? 'Unknown Piano',
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: textDark,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -655,7 +667,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   '${dateFormatter.format(booking.startTime)} • ${timeFormatter.format(booking.startTime)} - ${timeFormatter.format(booking.endTime)}',
                   style: GoogleFonts.inter(
-                    color: Colors.white70,
+                    color: textMuted,
                     fontSize: 13,
                   ),
                 ),
@@ -738,7 +750,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardLight,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: const Color(0xFFD4AF37).withOpacity(0.3),
@@ -755,7 +767,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Hồ sơ đang chờ duyệt',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textDark,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -765,7 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Hồ sơ giáo viên của bạn đang được xem xét.\nChúng tôi sẽ thông báo kết quả trong vòng 72 giờ làm việc.',
               style: GoogleFonts.inter(
-                color: Colors.white70,
+                color: textMuted,
                 fontSize: 16,
                 height: 1.5,
               ),
@@ -783,13 +795,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E1E1E),
-                foregroundColor: Colors.white70,
+                backgroundColor: cardLight,
+                foregroundColor: textMuted,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: Colors.white.withOpacity(0.2),
+                    color: borderLight,
                   ),
                 ),
               ),
@@ -812,7 +824,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardLight,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Colors.redAccent.withOpacity(0.3),
@@ -829,7 +841,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Hồ sơ không được duyệt',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textDark,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -849,7 +861,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               'Vui lòng liên hệ với chúng tôi để được hỗ trợ.',
               style: GoogleFonts.inter(
-                color: Colors.white70,
+                color: textMuted,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -866,13 +878,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E1E1E),
-                foregroundColor: Colors.white70,
+                backgroundColor: cardLight,
+                foregroundColor: textMuted,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: Colors.white.withOpacity(0.2),
+                    color: borderLight,
                   ),
                 ),
               ),
@@ -883,3 +895,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+
+

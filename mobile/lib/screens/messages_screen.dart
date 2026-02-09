@@ -12,6 +12,15 @@ class MessagesScreen extends StatefulWidget {
 
 class _MessagesScreenState extends State<MessagesScreen> {
   String _searchQuery = '';
+
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   
   // Mock data
   final List<Conversation> _conversations = [
@@ -63,7 +72,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -94,10 +103,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -114,7 +123,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
               ),
@@ -124,12 +133,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E2E2E),
+                    color: cardAlt,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.search,
-                    color: Color(0xFFD4AF37),
+                    color: primaryGold,
                     size: 20,
                   ),
                 ),
@@ -141,12 +150,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E2E2E),
+                    color: cardAlt,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.filter_list,
-                    color: Color(0xFFD4AF37),
+                    color: primaryGold,
                     size: 20,
                   ),
                 ),
@@ -178,12 +187,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: cardLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: conversation.hasUnread
-                ? const Color(0xFFD4AF37).withOpacity(0.3)
-                : Colors.transparent,
+                ? primaryGold.withOpacity(0.35)
+                : borderLight,
             width: 1.5,
           ),
         ),
@@ -207,10 +216,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       conversation.studentAvatar,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFF2E2E2E),
+                        color: cardAlt,
                         child: const Icon(
                           Icons.person,
-                          color: Color(0xFFD4AF37),
+                          color: primaryGold,
                           size: 28,
                         ),
                       ),
@@ -225,10 +234,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       width: 14,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37),
+                        color: primaryGold,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF1E1E1E),
+                          color: cardLight,
                           width: 2,
                         ),
                       ),
@@ -251,7 +260,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: textDark,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -261,7 +270,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         conversation.time,
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.grey[500],
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -272,8 +281,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: conversation.hasUnread 
-                          ? Colors.grey[300] 
-                          : Colors.grey[500],
+                          ? textDark 
+                          : textMuted,
                       fontWeight: conversation.hasUnread 
                           ? FontWeight.w500 
                           : FontWeight.normal,
@@ -299,16 +308,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: cardAlt,
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFFD4AF37).withOpacity(0.3),
+                color: primaryGold.withOpacity(0.3),
                 width: 2,
               ),
             ),
             child: const Icon(
               Icons.message_outlined,
-              color: Color(0xFFD4AF37),
+              color: primaryGold,
               size: 48,
             ),
           ),
@@ -320,7 +329,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 8),
@@ -330,7 +339,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 : 'Thử tìm kiếm với từ khóa khác',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
           ),
         ],
@@ -343,23 +352,23 @@ class _MessagesScreenState extends State<MessagesScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           'Tìm kiếm',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: textDark,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: TextField(
           autofocus: true,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
           decoration: InputDecoration(
             hintText: 'Nhập tên học viên...',
-            hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
+            hintStyle: GoogleFonts.inter(color: textMuted),
             prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
             filled: true,
-            fillColor: const Color(0xFF2E2E2E),
+            fillColor: cardAlt,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -386,7 +395,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: cardLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -401,7 +410,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             const SizedBox(height: 20),
@@ -420,7 +429,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       leading: Icon(icon, color: const Color(0xFFD4AF37)),
       title: Text(
         label,
-        style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+        style: GoogleFonts.inter(color: textDark, fontSize: 15),
       ),
       onTap: () {
         Navigator.pop(context);
@@ -450,3 +459,4 @@ class Conversation {
     required this.nextLesson,
   });
 }
+

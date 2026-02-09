@@ -21,6 +21,15 @@ class TeacherDashboardScreen extends StatefulWidget {
 
 class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   final _supabaseService = SupabaseService();
+
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   
   bool _isOnline = true;
   int _currentNavIndex = 0;
@@ -72,7 +81,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundLight,
         body: const Center(
           child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
         ),
@@ -80,7 +89,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -133,7 +142,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
               const SizedBox(height: 4),
@@ -141,7 +150,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 'Chúc thầy/cô có một ngày dạy tuyệt vời!',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: Colors.grey[400],
+                  color: textMuted,
                 ),
               ).animate().fadeIn(delay: 200.ms, duration: 600.ms),
             ],
@@ -161,7 +170,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: cardLight,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -181,7 +190,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardLight,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -214,7 +223,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: cardLight,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -276,7 +285,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardLight,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: const Color(0xFFD4AF37),
@@ -302,7 +311,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: textDark,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -319,7 +328,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: cardLight,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -341,7 +350,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: textDark,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -384,7 +393,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: _buildStatCard(
             label: 'Đánh giá',
             value: '$_rating ⭐',
-            valueColor: Colors.white,
+            valueColor: textDark,
             subtitle: '($_ratingCount)',
             delay: 200,
             showArrow: true,
@@ -413,7 +422,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             child: _buildStatCard(
               label: 'Học viên',
               value: '$_totalStudents',
-              valueColor: Colors.white,
+              valueColor: textDark,
               subtitle: 'Đang hoạt động',
               delay: 300,
               showArrow: true,
@@ -436,7 +445,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     final cardContent = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -455,7 +464,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   label,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.grey[400],
+                    color: textMuted,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -491,7 +500,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               subtitle,
               style: GoogleFonts.inter(
                 fontSize: 10,
-                color: Colors.grey[500],
+                color: textMuted,
                 fontWeight: FontWeight.w400,
               ),
               overflow: TextOverflow.ellipsis,
@@ -534,7 +543,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         gradient: LinearGradient(
           colors: [
             const Color(0xFFD4AF37).withOpacity(0.15),
-            const Color(0xFF1E1E1E),
+            const Color(0xFFFFFFFF),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -561,7 +570,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
               ),
@@ -582,20 +591,20 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             style: GoogleFonts.inter(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
               height: 1.2,
             ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.person_outline, size: 18, color: Colors.grey[400]),
+              Icon(Icons.person_outline, size: 18, color: textMuted),
               const SizedBox(width: 8),
               Text(
                 'Học viên: Ánh',
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  color: Colors.grey[300],
+                  color: textMuted,
                 ),
               ),
             ],
@@ -603,13 +612,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.video_call_outlined, size: 18, color: Colors.grey[400]),
+              Icon(Icons.video_call_outlined, size: 18, color: textMuted),
               const SizedBox(width: 8),
               Text(
                 'Hình thức: Online 1-1',
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  color: Colors.grey[300],
+                  color: textMuted,
                 ),
               ),
             ],
@@ -646,7 +655,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -662,7 +671,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ),
               const SizedBox(width: 8),
@@ -677,7 +686,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
               ),
@@ -737,20 +746,20 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ),
               Text(
                 type,
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  color: Colors.grey[400],
+                  color: textMuted,
                 ),
               ),
             ],
           ),
         ),
-        Icon(Icons.chevron_right, color: Colors.grey[500]),
+        Icon(Icons.chevron_right, color: textMuted),
       ],
     );
   }
@@ -760,7 +769,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -774,7 +783,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 24),
@@ -871,7 +880,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 color: const Color(0xFFD4AF37),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF121212),
+                  color: cardAlt,
                   width: 2,
                 ),
               ),
@@ -891,7 +900,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             padding: const EdgeInsets.all(12),
             margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF121212),
+              color: cardAlt,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFFD4AF37).withOpacity(0.1),
@@ -911,7 +920,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 Container(
                   width: 1,
                   height: 30,
-                  color: Colors.grey[700],
+                  color: textMuted,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -923,19 +932,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: textDark,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(icon, size: 14, color: Colors.grey[400]),
+                          Icon(icon, size: 14, color: textMuted),
                           const SizedBox(width: 4),
                           Text(
                             type,
                             style: GoogleFonts.inter(
                               fontSize: 13,
-                              color: Colors.grey[400],
+                              color: textMuted,
                             ),
                           ),
                         ],
@@ -955,7 +964,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         border: Border(
           top: BorderSide(
             color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -1012,19 +1021,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           'Đăng xuất',
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Bạn có chắc chắn muốn đăng xuất?',
-          style: GoogleFonts.inter(color: Colors.white70),
+          style: GoogleFonts.inter(color: textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+            child: Text('Không', style: GoogleFonts.inter(color: textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -1048,7 +1057,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   void _showProfileMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: cardLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1062,7 +1071,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: borderLight,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1097,7 +1106,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: textDark,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1105,7 +1114,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         _supabaseService.currentUser?.email ?? '',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: Colors.white70,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -1114,7 +1123,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const Divider(color: Color(0xFF2E2E2E)),
+            const Divider(color: borderLight),
             const SizedBox(height: 12),
             // Menu Items
             _buildMenuItem(
@@ -1126,9 +1135,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   SnackBar(
                     content: Text(
                       'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: Colors.white),
+                      style: GoogleFonts.inter(color: textDark),
                     ),
-                    backgroundColor: const Color(0xFF1E1E1E),
+                    backgroundColor: cardLight,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -1143,9 +1152,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   SnackBar(
                     content: Text(
                       'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: Colors.white),
+                      style: GoogleFonts.inter(color: textDark),
                     ),
-                    backgroundColor: const Color(0xFF1E1E1E),
+                    backgroundColor: cardLight,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -1160,16 +1169,16 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   SnackBar(
                     content: Text(
                       'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: Colors.white),
+                      style: GoogleFonts.inter(color: textDark),
                     ),
-                    backgroundColor: const Color(0xFF1E1E1E),
+                    backgroundColor: cardLight,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
             ),
             const SizedBox(height: 12),
-            const Divider(color: Color(0xFF2E2E2E)),
+            const Divider(color: borderLight),
             const SizedBox(height: 12),
             _buildMenuItem(
               icon: Icons.logout,
@@ -1180,19 +1189,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: const Color(0xFF1E1E1E),
+                    backgroundColor: cardLight,
                     title: Text(
                       'Đăng xuất',
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
                     ),
                     content: Text(
                       'Bạn có chắc chắn muốn đăng xuất?',
-                      style: GoogleFonts.inter(color: Colors.white70),
+                      style: GoogleFonts.inter(color: textMuted),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        child: Text('Không', style: GoogleFonts.inter(color: Colors.white60)),
+                        child: Text('Không', style: GoogleFonts.inter(color: textMuted)),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
@@ -1237,7 +1246,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         style: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.redAccent : Colors.white,
+          color: isDestructive ? Colors.redAccent : textDark,
         ),
       ),
       onTap: onTap,
@@ -1294,7 +1303,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? const Color(0xFFD4AF37) : Colors.grey[400],
+              color: isActive ? const Color(0xFFD4AF37) : textMuted,
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -1303,7 +1312,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? const Color(0xFFD4AF37) : Colors.grey[400],
+                color: isActive ? const Color(0xFFD4AF37) : textMuted,
               ),
             ),
           ],
@@ -1312,3 +1321,5 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     );
   }
 }
+
+

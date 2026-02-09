@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'upload_video_screen.dart';
 
 class CreateVideoScreen extends StatefulWidget {
@@ -11,135 +12,130 @@ class CreateVideoScreen extends StatefulWidget {
 }
 
 class _CreateVideoScreenState extends State<CreateVideoScreen> {
-  // Spiano Dark Luxury Colors
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color cardDark = Color(0xFF1E1E1E);
+  static const Color backgroundLight = Color(0xFFF6F7FB);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F4F9);
+  static const Color textDark = Color(0xFF111827);
+  static const Color textMuted = Color(0xFF667085);
+  static const Color borderLight = Color(0xFFE4E7EC);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(),
-            
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    
-                    // Title
-                    Text(
-                      'Tạo video mới',
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ).animate().fadeIn(duration: 400.ms).slideY(
-                      begin: -0.2,
-                      duration: 400.ms,
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    Text(
-                      'Chia sẻ video dạy piano của bạn',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        color: Colors.grey[500],
-                      ),
-                    ).animate().fadeIn(delay: 100.ms),
-                    
-                    const SizedBox(height: 48),
-                    
-                    // Main Options
-                    _buildMainOption(
-                      icon: Icons.videocam,
-                      iconColor: Colors.red[400]!,
-                      title: 'Quay video',
-                      subtitle: 'Quay video ngay bằng camera',
-                      onTap: () {
-                        _handleRecordVideo();
-                      },
-                      delay: 200,
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    _buildMainOption(
-                      icon: Icons.photo_library,
-                      iconColor: Colors.blue[400]!,
-                      title: 'Chọn từ thư viện',
-                      subtitle: 'Tải video có sẵn lên',
-                      onTap: () {
-                        _handlePickFromGallery();
-                      },
-                      delay: 300,
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    _buildMainOption(
-                      icon: Icons.music_note,
-                      iconColor: primaryGold,
-                      title: 'Tạo với nhạc nền',
-                      subtitle: 'Thêm nhạc piano vào video',
-                      onTap: () {
-                        _handleCreateWithMusic();
-                      },
-                      delay: 400,
-                    ),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // Divider
-                    Row(
+      backgroundColor: backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundDecor(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.grey[800],
-                          ),
+                        _buildHeroCard(),
+                        const SizedBox(height: 24),
+                        _buildMainOption(
+                          icon: Icons.videocam_rounded,
+                          iconColor: Colors.red[400]!,
+                          title: 'Quay video',
+                          subtitle: 'Dung camera de quay ngay',
+                          badge: 'Nhanh',
+                          onTap: _handleRecordVideo,
+                          delay: 120,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'HOẶC',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[600],
-                              letterSpacing: 1.2,
+                        const SizedBox(height: 14),
+                        _buildMainOption(
+                          icon: Icons.photo_library_rounded,
+                          iconColor: Colors.blue[400]!,
+                          title: 'Chon tu thu vien',
+                          subtitle: 'Dang video co san tu may',
+                          badge: 'Pho bien',
+                          onTap: _handlePickFromGallery,
+                          delay: 200,
+                        ),
+                        const SizedBox(height: 14),
+                        _buildMainOption(
+                          icon: Icons.music_note_rounded,
+                          iconColor: primaryGold,
+                          title: 'Tao voi nhac nen',
+                          subtitle: 'Them nhac piano vao video',
+                          badge: 'Sang tao',
+                          onTap: _handleCreateWithMusic,
+                          delay: 280,
+                        ),
+                        const SizedBox(height: 26),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: borderLight)),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                'TEMPLATE',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1,
+                                  color: textMuted,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.grey[800],
-                          ),
-                        ),
+                            const Expanded(child: Divider(color: borderLight)),
+                          ],
+                        ).animate().fadeIn(delay: 360.ms),
+                        const SizedBox(height: 18),
+                        _buildTemplateList(),
                       ],
-                    ).animate().fadeIn(delay: 500.ms),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // Templates Section
-                    _buildTemplatesSection(),
-                  ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundDecor() {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -110,
+            right: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [primaryGold.withOpacity(0.16), Colors.transparent],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            bottom: -120,
+            left: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Colors.blue.withOpacity(0.08), Colors.transparent],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,62 +143,48 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
+        color: cardLight,
         border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.05),
-            width: 1,
-          ),
+          bottom: BorderSide(color: borderLight),
         ),
       ),
       child: Row(
         children: [
-          // Close Button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: cardDark,
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderLight),
               ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: const Icon(Icons.close, color: textDark, size: 20),
             ),
           ),
-          
-          const Expanded(child: SizedBox()),
-          
-          // Help Button
+          const Spacer(),
           GestureDetector(
-            onTap: () {
-              _showHelpDialog();
-            },
+            onTap: _showHelpDialog,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: cardDark,
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderLight),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.help_outline,
-                    color: primaryGold,
-                    size: 18,
-                  ),
+                  const Icon(Icons.help_outline, color: darkGold, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Trợ giúp',
+                    'Tro giup',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: primaryGold,
+                      color: darkGold,
                     ),
                   ),
                 ],
@@ -210,6 +192,93 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            primaryGold.withOpacity(0.14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tao video moi',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Dang video day piano voi bo cuc sang va de doc.',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              height: 1.45,
+              color: textMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildMetric('9:16', 'Ty le de xuat'),
+              const SizedBox(width: 10),
+              _buildMetric('15-60s', 'Do dai tot'),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.12, duration: 400.ms);
+  }
+
+  Widget _buildMetric(String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: cardLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.inter(fontSize: 12, color: textMuted),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -219,201 +288,205 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
     required Color iconColor,
     required String title,
     required String subtitle,
+    required String badge,
     required VoidCallback onTap,
     required int delay,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: cardDark,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.05),
-            width: 1,
-          ),
+          color: cardLight,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderLight),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            // Icon
             Container(
-              width: 64,
-              height: 64,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 32,
-              ),
+              child: Icon(icon, color: iconColor, size: 30),
             ),
-            
-            const SizedBox(width: 20),
-            
-            // Text
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.inter(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: cardAlt,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          badge,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Colors.grey[500],
+                      color: textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-            
-            // Arrow
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey[600],
-              size: 18,
-            ),
+            const SizedBox(width: 10),
+            const Icon(Icons.arrow_forward_ios, color: textMuted, size: 16),
           ],
         ),
       ),
     ).animate().fadeIn(delay: delay.ms).slideX(
-      begin: 0.3,
-      duration: 400.ms,
-      delay: delay.ms,
-    );
+          begin: 0.22,
+          duration: 350.ms,
+          delay: delay.ms,
+        );
   }
 
-  Widget _buildTemplatesSection() {
+  Widget _buildTemplateList() {
     final templates = [
-      {
-        'title': 'Bài học 5 phút',
-        'icon': '⏱️',
-        'color': Colors.purple[400],
-      },
-      {
-        'title': 'Cover ngắn',
-        'icon': '🎵',
-        'color': Colors.pink[400],
-      },
-      {
-        'title': 'Tips & Tricks',
-        'icon': '💡',
-        'color': Colors.orange[400],
-      },
+      _TemplateItem(
+        title: 'Bai hoc 5 phut',
+        subtitle: 'Hook nhanh + demo ngon',
+        color: const Color(0xFF4F46E5),
+        icon: Icons.timer_rounded,
+      ),
+      _TemplateItem(
+        title: 'Cover ngan',
+        subtitle: 'Mo bai + cao trao + outro',
+        color: const Color(0xFFEC4899),
+        icon: Icons.music_video_rounded,
+      ),
+      _TemplateItem(
+        title: 'Tips & Tricks',
+        subtitle: 'Mot meo / mot video',
+        color: const Color(0xFFF97316),
+        icon: Icons.tips_and_updates_rounded,
+      ),
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Templates phổ biến',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ).animate().fadeIn(delay: 600.ms),
-        
-        const SizedBox(height: 20),
-        
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: templates.asMap().entries.map((entry) {
-            final index = entry.key;
-            final template = entry.value;
-            
-            return GestureDetector(
-              onTap: () {
-                _handleTemplateSelected(template['title'] as String);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: (template['color'] as Color).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: (template['color'] as Color).withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      template['icon'] as String,
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      template['title'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+      children: templates.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        return Padding(
+          padding:
+              EdgeInsets.only(bottom: index == templates.length - 1 ? 0 : 12),
+          child: GestureDetector(
+            onTap: () => _handleTemplateSelected(item.title),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardLight,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderLight),
               ),
-            ).animate().fadeIn(delay: (700 + index * 100).ms).scale(
-              begin: const Offset(0.8, 0.8),
-              duration: 400.ms,
-              delay: (700 + index * 100).ms,
-            );
-          }).toList(),
-        ),
-      ],
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: item.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.subtitle,
+                          style:
+                              GoogleFonts.inter(fontSize: 13, color: textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: textMuted),
+                ],
+              ),
+            ),
+          ).animate().fadeIn(delay: (430 + index * 90).ms).slideY(
+                begin: 0.18,
+                duration: 320.ms,
+                delay: (430 + index * 90).ms,
+              ),
+        );
+      }).toList(),
     );
   }
 
   void _handleRecordVideo() {
-    // TODO: Open camera plugin to record video
-    // For now, navigate directly to upload screen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(
-          videoPath: null, // Will be set after camera recording
-        ),
+        builder: (context) => const UploadVideoScreen(videoPath: null),
       ),
     );
   }
 
   void _handlePickFromGallery() {
-    // TODO: Open image_picker to select video from gallery
-    // For now, navigate directly to upload screen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(
-          videoPath: null, // Will be set after gallery selection
-        ),
+        builder: (context) => const UploadVideoScreen(videoPath: null),
       ),
     );
   }
 
   void _handleCreateWithMusic() {
-    // TODO: Open music library screen
-    // For now, navigate directly to upload screen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(
-          videoPath: null, // Will be set after music selection
-        ),
+        builder: (context) => const UploadVideoScreen(videoPath: null),
       ),
     );
   }
@@ -421,35 +494,30 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
   void _handleTemplateSelected(String templateName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Sử dụng template: $templateName',
-          style: GoogleFonts.inter(),
-        ),
-        backgroundColor: Colors.purple[400],
+        content:
+            Text('Su dung template: $templateName', style: GoogleFonts.inter()),
+        backgroundColor: darkGold,
         behavior: SnackBarBehavior.floating,
       ),
     );
-    // TODO: Open template editor
   }
 
   void _showHelpDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: cardDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        backgroundColor: cardLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb_outline, color: primaryGold),
-            const SizedBox(width: 12),
+            const Icon(Icons.lightbulb_outline, color: darkGold),
+            const SizedBox(width: 10),
             Text(
-              'Mẹo tạo video',
+              'Meo tao video',
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ],
@@ -458,24 +526,24 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHelpItem('📱', 'Quay video dọc (9:16) để hiển thị tốt nhất'),
-            const SizedBox(height: 12),
-            _buildHelpItem('⏱️', 'Video ngắn (15-60s) có tương tác cao hơn'),
-            const SizedBox(height: 12),
-            _buildHelpItem('🎹', 'Hiển thị rõ tay và phím đàn khi dạy'),
-            const SizedBox(height: 12),
-            _buildHelpItem('💡', 'Ánh sáng tốt giúp video chuyên nghiệp hơn'),
+            _buildHelpItem('Quay doc 9:16 de hien thi tot hon tren feed.'),
+            const SizedBox(height: 10),
+            _buildHelpItem('Mo dau 3 giay dau can ro noi dung chinh.'),
+            const SizedBox(height: 10),
+            _buildHelpItem('Anh sang on dinh giup video trong va net hon.'),
+            const SizedBox(height: 10),
+            _buildHelpItem('Tieu de ngan gon + hashtag dung chu de.'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Đã hiểu',
+              'Da hieu',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: primaryGold,
+                fontWeight: FontWeight.w700,
+                color: darkGold,
               ),
             ),
           ),
@@ -484,23 +552,37 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
     );
   }
 
-  Widget _buildHelpItem(String emoji, String text) {
+  Widget _buildHelpItem(String text) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 12),
+        const Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: Icon(Icons.check_circle, size: 14, color: darkGold),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[400],
-              height: 1.5,
-            ),
+            style:
+                GoogleFonts.inter(fontSize: 14, color: textMuted, height: 1.45),
           ),
         ),
       ],
     );
   }
+}
+
+class _TemplateItem {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  const _TemplateItem({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
 }

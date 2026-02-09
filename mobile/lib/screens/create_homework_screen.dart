@@ -17,6 +17,15 @@ class CreateHomeworkScreen extends StatefulWidget {
 }
 
 class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
+
   int _selectedExerciseType = 0; // 0: Finger, 1: Song, 2: Note Reading, 3: Rhythm
   double _bpm = 80.0;
   int _repetitions = 10;
@@ -34,7 +43,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -82,7 +91,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -99,7 +108,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -117,7 +126,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textDark,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -130,7 +139,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -155,7 +164,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 16),
@@ -186,7 +195,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                           end: Alignment.bottomRight,
                         )
                       : null,
-                  color: isSelected ? null : const Color(0xFF2E2E2E),
+                  color: isSelected ? null : cardAlt,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
@@ -209,7 +218,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? Colors.black : Colors.white,
+                        color: isSelected ? Colors.black : textDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -235,7 +244,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 16),
@@ -270,7 +279,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             Icon(
               Icons.info_outline,
               size: 14,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -278,7 +287,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                 'Đính kèm sheet nhạc hoặc video hướng dẫn',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[500],
+                  color: textMuted,
                 ),
               ),
             ),
@@ -300,7 +309,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
       child: Container(
         height: 140,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: cardLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isUploaded
@@ -330,7 +339,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                   decoration: BoxDecoration(
                     color: isUploaded
                         ? const Color(0xFFD4AF37).withOpacity(0.2)
-                        : const Color(0xFF2E2E2E),
+                        : cardAlt,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -345,7 +354,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -354,7 +363,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                   sublabel,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.grey[500],
+                    color: textMuted,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -376,7 +385,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 20),
@@ -399,7 +408,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -416,7 +425,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ),
               Container(
@@ -443,7 +452,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: const Color(0xFFD4AF37),
-              inactiveTrackColor: const Color(0xFF2E2E2E),
+              inactiveTrackColor: cardAlt,
               thumbColor: const Color(0xFFD4AF37),
               overlayColor: const Color(0xFFD4AF37).withOpacity(0.2),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
@@ -466,14 +475,14 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                 '60',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[500],
+                  color: textMuted,
                 ),
               ),
               Text(
                 '120',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[500],
+                  color: textMuted,
                 ),
               ),
             ],
@@ -487,7 +496,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -501,7 +510,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
@@ -518,7 +527,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E2E2E),
+                    color: cardAlt,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -560,7 +569,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E2E2E),
+                    color: cardAlt,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -583,7 +592,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: cardLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -612,7 +621,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                     'Hạn hoàn thành',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: textMuted,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -621,7 +630,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: textDark,
                     ),
                   ),
                 ],
@@ -645,8 +654,8 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF2E2416),
-            const Color(0xFF1E1E1E),
+            const Color(0xFFFFF3D1),
+            const Color(0xFFFFFFFF),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -712,7 +721,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             'Bài tập phù hợp Level ${widget.studentLevel}: Chơi 1 bài trong 30 ngày.',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white,
+              color: textDark,
               height: 1.5,
             ),
           ),
@@ -749,7 +758,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         border: Border(
           top: BorderSide(
             color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -855,9 +864,9 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
         SnackBar(
           content: Text(
             'Đã tải bản nhạc thành công',
-            style: GoogleFonts.inter(color: Colors.white),
+            style: GoogleFonts.inter(color: textDark),
           ),
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: cardLight,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -874,9 +883,9 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
         SnackBar(
           content: Text(
             'Đã lưu video mẫu thành công',
-            style: GoogleFonts.inter(color: Colors.white),
+            style: GoogleFonts.inter(color: textDark),
           ),
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: cardLight,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -895,10 +904,10 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             colorScheme: const ColorScheme.dark(
               primary: Color(0xFFD4AF37),
               onPrimary: Colors.black,
-              surface: Color(0xFF1E1E1E),
-              onSurface: Colors.white,
+              surface: cardLight,
+              onSurface: textDark,
             ),
-            dialogBackgroundColor: const Color(0xFF1E1E1E),
+            dialogBackgroundColor: cardLight,
           ),
           child: child!,
         );
@@ -922,9 +931,9 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
       SnackBar(
         content: Text(
           'Đã áp dụng gợi ý AI',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -939,11 +948,11 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             const SizedBox(width: 12),
             Text(
               'Đã lưu bản nháp',
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: textDark),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -955,7 +964,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
         SnackBar(
           content: Text(
             'Vui lòng tải bản nhạc hoặc video mẫu',
-            style: GoogleFonts.inter(color: Colors.white),
+            style: GoogleFonts.inter(color: textDark),
           ),
           backgroundColor: Colors.red[900],
           behavior: SnackBarBehavior.floating,
@@ -967,7 +976,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Row(
           children: [
             const Icon(Icons.check_circle, color: Color(0xFFD4AF37), size: 28),
@@ -975,7 +984,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             Text(
               'Thành công',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textDark,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -983,7 +992,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
         ),
         content: Text(
           'Đã gửi bài tập cho ${widget.studentName}',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
         actions: [
           ElevatedButton(
@@ -1009,11 +1018,11 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           'Hướng dẫn tạo bài tập',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: textDark,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1059,7 +1068,7 @@ class _CreateHomeworkScreenState extends State<CreateHomeworkScreen> {
             child: Text(
               text,
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textDark,
                 fontSize: 14,
               ),
             ),
@@ -1129,3 +1138,6 @@ class ExerciseType {
     required this.label,
   });
 }
+
+
+

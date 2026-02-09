@@ -11,6 +11,14 @@ class TeacherScheduleScreen extends StatefulWidget {
 }
 
 class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   // Master toggles
   bool _onlineEnabled = true;
   bool _offlineEnabled = true;
@@ -57,7 +65,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -78,10 +86,10 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -90,7 +98,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.arrow_back, color: textDark),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
@@ -99,7 +107,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textDark,
               ),
               textAlign: TextAlign.center,
             ),
@@ -139,7 +147,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -153,7 +161,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -175,7 +183,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             'Bật/tắt để nhận booking theo hình thức',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.white54,
+              color: textMuted,
             ),
           ),
         ],
@@ -199,7 +207,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
         ),
@@ -221,7 +229,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -265,7 +273,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: i + 1 == _currentDayOfWeek ? FontWeight.bold : FontWeight.w500,
-                  color: i + 1 == _currentDayOfWeek ? const Color(0xFFD4AF37) : Colors.white70,
+                  color: i + 1 == _currentDayOfWeek ? const Color(0xFFD4AF37) : textMuted,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -287,7 +295,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFF333333).withOpacity(0.5),
+            color: borderLight,
             width: 0.5,
           ),
         ),
@@ -301,7 +309,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
               hour,
               style: GoogleFonts.robotoMono(
                 fontSize: 11,
-                color: Colors.white54,
+                color: textMuted,
               ),
             ),
           ),
@@ -327,7 +335,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(
-              color: const Color(0xFF333333).withOpacity(0.3),
+              color: borderLight,
               width: 0.5,
             ),
             borderRadius: BorderRadius.circular(4),
@@ -349,7 +357,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
         label = 'Offline';
         break;
       case ScheduleSlotType.blocked:
-        bgColor = const Color(0xFF333333);
+        bgColor = textMuted;
         label = 'Đã chặn';
         break;
       default:
@@ -393,7 +401,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
         const SizedBox(width: 16),
         _buildLegendItem(const Color(0xFFF5E1A4), 'Offline'),
         const SizedBox(width: 16),
-        _buildLegendItem(const Color(0xFF333333), 'Đã chặn'),
+        _buildLegendItem(textMuted, 'Đã chặn'),
       ],
     );
   }
@@ -414,7 +422,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: Colors.white60,
+            color: textMuted,
           ),
         ),
       ],
@@ -431,7 +439,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
         bottom: MediaQuery.of(context).padding.bottom + 20,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -450,7 +458,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 16),
@@ -458,7 +466,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             'Chọn ngày',
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: Colors.white70,
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -468,7 +476,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             'Chọn giờ',
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: Colors.white70,
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -489,7 +497,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                       SnackBar(
                         content: Text(
                           'Đã thêm khung giờ!',
-                          style: GoogleFonts.inter(color: Colors.white),
+                          style: GoogleFonts.inter(color: textDark),
                         ),
                         backgroundColor: const Color(0xFFD4AF37),
                       ),
@@ -516,7 +524,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                       SnackBar(
                         content: Text(
                           'Đã chặn lịch!',
-                          style: GoogleFonts.inter(color: Colors.white),
+                          style: GoogleFonts.inter(color: textDark),
                         ),
                         backgroundColor: Colors.grey,
                       ),
@@ -547,7 +555,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                   SnackBar(
                     content: Text(
                       '✓ Đã lưu lịch thành công!',
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.w600),
                     ),
                     backgroundColor: Colors.green,
                   ),
@@ -573,7 +581,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             'Lịch được đồng bộ ngay sau khi lưu',
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.white54,
+              color: textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -605,7 +613,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
               color: isSelected ? const Color(0xFFD4AF37) : Colors.transparent,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF333333),
+                color: isSelected ? const Color(0xFFD4AF37) : textMuted,
                 width: 2,
               ),
             ),
@@ -615,7 +623,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.black : Colors.white70,
+                  color: isSelected ? Colors.black : textMuted,
                 ),
               ),
             ),
@@ -629,9 +637,9 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2E2E2E),
+        color: cardAlt,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF333333)),
+        border: Border.all(color: borderLight),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -640,7 +648,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             '$label $value',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white,
+              color: textDark,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -654,14 +662,14 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           existingSlot != null ? 'Chỉnh sửa slot' : 'Tạo slot mới',
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
         ),
         content: Text(
           '${_dayLabels[day - 1]} - $hour',
-          style: GoogleFonts.inter(color: Colors.white70),
+          style: GoogleFonts.inter(color: textMuted),
         ),
         actions: [
           if (existingSlot != null)
@@ -673,7 +681,7 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Đã xóa slot', style: GoogleFonts.inter(color: Colors.white)),
+                    content: Text('Đã xóa slot', style: GoogleFonts.inter(color: textDark)),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -682,14 +690,14 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Đóng', style: GoogleFonts.inter(color: Colors.white60)),
+            child: Text('Đóng', style: GoogleFonts.inter(color: textMuted)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Tạo slot thành công!', style: GoogleFonts.inter(color: Colors.white)),
+                  content: Text('Tạo slot thành công!', style: GoogleFonts.inter(color: textDark)),
                   backgroundColor: const Color(0xFFD4AF37),
                 ),
               );
@@ -716,3 +724,5 @@ enum ScheduleSlotType {
   offline,
   blocked,
 }
+
+

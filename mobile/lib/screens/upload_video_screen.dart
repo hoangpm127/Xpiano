@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   final String? videoPath;
-  
+
   const UploadVideoScreen({
     Key? key,
     this.videoPath,
@@ -15,19 +15,21 @@ class UploadVideoScreen extends StatefulWidget {
 }
 
 class _UploadVideoScreenState extends State<UploadVideoScreen> {
-  // Spiano Dark Luxury Colors
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color cardDark = Color(0xFF1E1E1E);
-  static const Color cardDarker = Color(0xFF2E2E2E);
+  static const Color backgroundLight = Color(0xFFF6F7FB);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F4F9);
+  static const Color textDark = Color(0xFF111827);
+  static const Color textMuted = Color(0xFF667085);
+  static const Color borderLight = Color(0xFFE4E7EC);
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _hashtagController = TextEditingController();
-  
+
   bool _affiliateLinkEnabled = true;
-  String _selectedGoal = 'Học ngay (Booking giáo viên)';
-  String _selectedTeacher = 'Cô Linh — 4.9⭐';
+  String _selectedGoal = 'Hoc ngay (Booking giao vien)';
+  String _selectedTeacher = 'Co Linh - 4.9*';
 
   final List<String> _hashtagSuggestions = [
     '#luyenngon',
@@ -48,39 +50,25 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Stack(
           children: [
-            // Main Content
             CustomScrollView(
               slivers: [
-                // Header
                 SliverToBoxAdapter(child: _buildHeader()),
-                
-                // Content
                 SliverToBoxAdapter(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 130),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Video Preview
                         _buildVideoPreview().animate().fadeIn(duration: 400.ms),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Title Input
+                        const SizedBox(height: 28),
                         _buildTitleInput().animate().fadeIn(delay: 100.ms),
-                        
                         const SizedBox(height: 24),
-                        
-                        // Hashtag Input
                         _buildHashtagInput().animate().fadeIn(delay: 200.ms),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Settings Section
+                        const SizedBox(height: 28),
                         _buildSettingsSection().animate().fadeIn(delay: 300.ms),
                       ],
                     ),
@@ -88,12 +76,10 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 ),
               ],
             ),
-            
-            // Footer
             Positioned(
-              bottom: 0,
               left: 0,
               right: 0,
+              bottom: 0,
               child: _buildFooter(),
             ),
           ],
@@ -102,73 +88,60 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     );
   }
 
-  // Header
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
+        color: cardLight,
         border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.05),
-            width: 1,
-          ),
+          bottom: BorderSide(color: borderLight, width: 1),
         ),
       ),
       child: Row(
         children: [
-          // Back Button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: cardDark,
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderLight),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Colors.white,
+                color: textDark,
                 size: 18,
               ),
             ),
           ),
-          
-          const SizedBox(width: 16),
-          
-          // Title
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Upload video',
+              'Dang tai video',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
-          
-          // Save Draft Button
           GestureDetector(
-            onTap: () {
-              _handleSaveDraft();
-            },
+            onTap: _handleSaveDraft,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: cardDark,
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: primaryGold.withOpacity(0.3),
-                  width: 1,
-                ),
+                border: Border.all(color: borderLight),
               ),
               child: Text(
-                'Lưu nháp',
+                'Luu nhap',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: primaryGold,
+                  color: darkGold,
                 ),
               ),
             ),
@@ -178,17 +151,20 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     );
   }
 
-  // Video Preview
   Widget _buildVideoPreview() {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cardDark,
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: primaryGold.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: AspectRatio(
         aspectRatio: 16 / 9,
@@ -197,33 +173,28 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Thumbnail (placeholder)
               Container(
-                color: cardDarker,
+                color: cardAlt,
                 child: widget.videoPath != null
                     ? Image.network(
                         'https://picsum.photos/800/450?random=piano',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholder();
-                        },
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
                       )
                     : _buildPlaceholder(),
               ),
-              
-              // Play Overlay
               Center(
                 child: Container(
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: primaryGold.withOpacity(0.9),
+                    color: primaryGold.withOpacity(0.92),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryGold.withOpacity(0.4),
+                        color: primaryGold.withOpacity(0.35),
                         blurRadius: 20,
-                        spreadRadius: 2,
+                        spreadRadius: 1,
                       ),
                     ],
                   ),
@@ -234,13 +205,12 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   ),
                 ),
               ),
-              
-              // Duration Badge
               Positioned(
                 bottom: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.75),
                     borderRadius: BorderRadius.circular(6),
@@ -267,60 +237,43 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.videocam_outlined,
-            size: 64,
-            color: Colors.grey[700],
-          ),
+          Icon(Icons.videocam_outlined, size: 64, color: Colors.grey[500]),
           const SizedBox(height: 16),
           Text(
             'Video preview',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: textMuted),
           ),
         ],
       ),
     );
   }
 
-  // Title Input
   Widget _buildTitleInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tiêu đề',
+          'Tieu de',
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: cardDark,
+            color: cardLight,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05),
-              width: 1,
-            ),
+            border: Border.all(color: borderLight),
           ),
           child: TextField(
             controller: _titleController,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.inter(fontSize: 15, color: textDark),
             maxLines: 2,
             decoration: InputDecoration(
-              hintText: 'Nhập tiêu đề video...',
-              hintStyle: GoogleFonts.inter(
-                fontSize: 15,
-                color: Colors.grey[600],
-              ),
+              hintText: 'Nhap tieu de video...',
+              hintStyle: GoogleFonts.inter(fontSize: 15, color: textMuted),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
             ),
@@ -330,7 +283,6 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     );
   }
 
-  // Hashtag Input
   Widget _buildHashtagInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,39 +292,28 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: cardDark,
+            color: cardLight,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05),
-              width: 1,
-            ),
+            border: Border.all(color: borderLight),
           ),
           child: TextField(
             controller: _hashtagController,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.inter(fontSize: 15, color: textDark),
             decoration: InputDecoration(
               hintText: '#luyenngon #beginner...',
-              hintStyle: GoogleFonts.inter(
-                fontSize: 15,
-                color: Colors.grey[600],
-              ),
+              hintStyle: GoogleFonts.inter(fontSize: 15, color: textMuted),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // Suggestion Chips
+        const SizedBox(height: 14),
         SizedBox(
           height: 40,
           child: ListView.builder(
@@ -381,8 +322,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             itemBuilder: (context, index) {
               return Padding(
                 padding: EdgeInsets.only(
-                  right: index < _hashtagSuggestions.length - 1 ? 10 : 0,
-                ),
+                    right: index < _hashtagSuggestions.length - 1 ? 10 : 0),
                 child: _buildHashtagChip(_hashtagSuggestions[index], index),
               );
             },
@@ -395,7 +335,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   Widget _buildHashtagChip(String hashtag, int index) {
     return GestureDetector(
       onTap: () {
-        final current = _hashtagController.text;
+        final current = _hashtagController.text.trim();
         if (current.isEmpty) {
           _hashtagController.text = hashtag;
         } else if (!current.contains(hashtag)) {
@@ -405,87 +345,60 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          color: primaryGold.withOpacity(0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: primaryGold,
-            width: 1.5,
-          ),
+          border: Border.all(color: primaryGold.withOpacity(0.35), width: 1.2),
         ),
         child: Text(
           hashtag,
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: darkGold,
           ),
         ),
       ),
     ).animate().fadeIn(delay: (index * 50).ms).slideX(
-      begin: 0.2,
-      duration: 400.ms,
-      delay: (index * 50).ms,
-    );
+          begin: 0.2,
+          duration: 400.ms,
+          delay: (index * 50).ms,
+        );
   }
 
-  // Settings Section
   Widget _buildSettingsSection() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardDark,
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1,
-        ),
+        border: Border.all(color: borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Text(
-            'Cài đặt',
+            'Cai dat',
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: textDark,
             ),
           ),
-          
           const SizedBox(height: 20),
-          
-          // Goal Dropdown
           _buildDropdown(
-            label: 'Gắn mục tiêu',
+            label: 'Gan muc tieu',
             value: _selectedGoal,
-            onTap: () {
-              _showGoalPicker();
-            },
+            onTap: _showGoalPicker,
           ),
-          
           const SizedBox(height: 20),
-          
-          // Teacher Dropdown
           _buildDropdown(
-            label: 'Giáo viên liên quan',
+            label: 'Giao vien lien quan',
             value: _selectedTeacher,
-            onTap: () {
-              _showTeacherPicker();
-            },
+            onTap: _showTeacherPicker,
           ),
-          
           const SizedBox(height: 24),
-          
-          // Divider
-          Container(
-            height: 1,
-            color: Colors.white.withOpacity(0.05),
-          ),
-          
+          const Divider(color: borderLight, height: 1),
           const SizedBox(height: 24),
-          
-          // Affiliate Toggle
           _buildAffiliateToggle(),
         ],
       ),
@@ -505,7 +418,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[500],
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 10),
@@ -514,12 +427,9 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: cardDarker,
+              color: cardAlt,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.05),
-                width: 1,
-              ),
+              border: Border.all(color: borderLight),
             ),
             child: Row(
               children: [
@@ -529,15 +439,12 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: textDark,
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  color: primaryGold,
-                  size: 24,
-                ),
+                const Icon(Icons.keyboard_arrow_down,
+                    color: darkGold, size: 24),
               ],
             ),
           ),
@@ -547,103 +454,89 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   }
 
   Widget _buildAffiliateToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Đính kèm link giới thiệu',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Link sẽ gắn vào video để ghi nhận thưởng minh bạch',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey[500],
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Dinh kem link gioi thieu',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: textDark,
+                ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                'Link se gan vao video de ghi nhan thuong minh bach.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: textMuted,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _affiliateLinkEnabled = !_affiliateLinkEnabled;
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 52,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _affiliateLinkEnabled ? primaryGold : Colors.grey[350],
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 16),
-            // Toggle Switch
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _affiliateLinkEnabled = !_affiliateLinkEnabled;
-                });
-              },
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              alignment: _affiliateLinkEnabled
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
               child: Container(
-                width: 52,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _affiliateLinkEnabled ? primaryGold : Colors.grey[700],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  alignment: _affiliateLinkEnabled
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    margin: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  // Footer
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
-        color: backgroundDark,
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.05),
-            width: 1,
-          ),
-        ),
+        color: cardLight,
+        border: const Border(top: BorderSide(color: borderLight, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 20,
-            offset: const Offset(0, -5),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Post Button
           GestureDetector(
-            onTap: () {
-              _handlePost();
-            },
+            onTap: _handlePost,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -667,7 +560,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 ],
               ),
               child: Text(
-                'Đăng',
+                'Dang',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -677,16 +570,13 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               ),
             ),
           ),
-          
           const SizedBox(height: 12),
-          
-          // Disclaimer
           Text(
-            'Bằng việc đăng, bạn đồng ý tiêu chuẩn cộng đồng.',
+            'Bang viec dang, ban dong y tieu chuan cong dong.',
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w400,
-              color: Colors.grey[600],
+              color: textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -695,28 +585,22 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     );
   }
 
-  // Handlers
   void _handleSaveDraft() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Đã lưu nháp',
-          style: GoogleFonts.inter(),
-        ),
-        backgroundColor: primaryGold,
+        content: Text('Da luu nhap', style: GoogleFonts.inter()),
+        backgroundColor: darkGold,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   void _handlePost() {
-    if (_titleController.text.isEmpty) {
+    if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Vui lòng nhập tiêu đề video',
-            style: GoogleFonts.inter(),
-          ),
+          content:
+              Text('Vui long nhap tieu de video', style: GoogleFonts.inter()),
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
         ),
@@ -724,14 +608,11 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       return;
     }
 
-    // Show success dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: cardDarker,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        backgroundColor: cardLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -742,27 +623,23 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 color: primaryGold.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.check_circle,
-                color: primaryGold,
-                size: 48,
-              ),
+              child: const Icon(Icons.check_circle, color: darkGold, size: 48),
             ),
             const SizedBox(height: 24),
             Text(
-              'Video đang xử lý',
+              'Video dang xu ly',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Video của bạn sẽ xuất hiện trên feed sau khi được xử lý (thường trong 5-10 phút)',
+              'Video cua ban se hien thi tren feed sau khi duoc xu ly (thuong 5-10 phut).',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey[400],
+                color: textMuted,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -770,9 +647,9 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             const SizedBox(height: 24),
             GestureDetector(
               onTap: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close upload screen
-                Navigator.pop(context); // Close create screen
+                Navigator.pop(context);
+                Navigator.pop(context);
+                Navigator.pop(context);
               },
               child: Container(
                 width: double.infinity,
@@ -782,7 +659,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Về trang chủ',
+                  'Ve trang chu',
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -796,168 +673,121 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         ),
       ),
     );
-
-    // TODO: Upload to Supabase Storage
-    // TODO: Insert record to database
   }
 
   void _showGoalPicker() {
     final goals = [
-      'Học ngay (Booking giáo viên)',
-      'Mượn đàn',
-      'Xem để giải trí',
-      'Không gắn mục tiêu',
+      'Hoc ngay (Booking giao vien)',
+      'Muon dan',
+      'Xem de giai tri',
+      'Khong gan muc tieu',
     ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: cardDarker,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[700],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Chọn mục tiêu',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ...goals.map((goal) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedGoal = goal;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: _selectedGoal == goal
-                        ? primaryGold.withOpacity(0.1)
-                        : cardDark,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedGoal == goal
-                          ? primaryGold
-                          : Colors.white.withOpacity(0.05),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    goal,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: _selectedGoal == goal ? primaryGold : Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
-          ],
-        ),
+      builder: (context) => _buildPickerSheet(
+        title: 'Chon muc tieu',
+        options: goals,
+        selected: _selectedGoal,
+        onSelected: (value) {
+          setState(() {
+            _selectedGoal = value;
+          });
+        },
       ),
     );
   }
 
   void _showTeacherPicker() {
     final teachers = [
-      'Cô Linh — 4.9⭐',
-      'Thầy Minh — 4.8⭐',
-      'Cô Hằng — 4.7⭐',
-      'Không chọn giáo viên',
+      'Co Linh - 4.9*',
+      'Thay Minh - 4.8*',
+      'Co Hang - 4.7*',
+      'Khong chon giao vien',
     ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: cardDarker,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[700],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => _buildPickerSheet(
+        title: 'Chon giao vien',
+        options: teachers,
+        selected: _selectedTeacher,
+        onSelected: (value) {
+          setState(() {
+            _selectedTeacher = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildPickerSheet({
+    required String title,
+    required List<String> options,
+    required String selected,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: cardLight,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: borderLight,
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Chọn giáo viên',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: textDark,
             ),
-            const SizedBox(height: 20),
-            ...teachers.map((teacher) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedTeacher = teacher;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: _selectedTeacher == teacher
-                        ? primaryGold.withOpacity(0.1)
-                        : cardDark,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedTeacher == teacher
-                          ? primaryGold
-                          : Colors.white.withOpacity(0.05),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    teacher,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color:
-                          _selectedTeacher == teacher ? primaryGold : Colors.white,
-                    ),
+          ),
+          const SizedBox(height: 20),
+          ...options.map((option) {
+            final isSelected = option == selected;
+            return GestureDetector(
+              onTap: () {
+                onSelected(option);
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? primaryGold.withOpacity(0.12) : cardAlt,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? primaryGold : borderLight,
+                    width: 1,
                   ),
                 ),
-              );
-            }).toList(),
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
-          ],
-        ),
+                child: Text(
+                  option,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected ? darkGold : textDark,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+          SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+        ],
       ),
     );
   }

@@ -24,6 +24,15 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   
   // Mock messages
   final List<ChatMessage> _messages = [
@@ -64,7 +73,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -102,10 +111,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -119,7 +128,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -146,7 +155,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 widget.studentAvatar,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFF2E2E2E),
+                  color: cardAlt,
                   child: const Icon(
                     Icons.person,
                     color: Color(0xFFD4AF37),
@@ -167,7 +176,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -198,7 +207,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -240,7 +249,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
@@ -287,16 +296,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               gradient: message.isTeacher
-                  ? LinearGradient(
+                  ? const LinearGradient(
                       colors: [
-                        const Color(0xFF4A3B10),
-                        const Color(0xFF3A2F0E),
+                        Color(0xFFFFE9B5),
+                        Color(0xFFFFD77A),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : null,
-              color: message.isTeacher ? null : const Color(0xFF2C2C2C),
+              color: message.isTeacher ? null : cardAlt,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
@@ -307,11 +316,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     ? const Radius.circular(4) 
                     : const Radius.circular(16),
               ),
+              border: Border.all(
+                color: borderLight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -323,7 +335,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     message.text,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.white,
+                      color: message.isTeacher ? const Color(0xFF3B2A00) : textDark,
                       height: 1.4,
                     ),
                   )
@@ -334,7 +346,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   message.time,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.5),
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -383,7 +395,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   message.duration ?? '0:00',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.7),
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -399,7 +411,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         border: Border(
           top: BorderSide(
             color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -508,10 +520,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -525,7 +537,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -540,12 +552,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: textDark),
               decoration: InputDecoration(
                 hintText: 'Nhắn cho ${widget.studentName}...',
-                hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
+                hintStyle: GoogleFonts.inter(color: textMuted),
                 filled: true,
-                fillColor: const Color(0xFF2E2E2E),
+                fillColor: cardAlt,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -612,9 +624,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       SnackBar(
         content: Text(
           'Chọn file để gửi',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -625,9 +637,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       SnackBar(
         content: Text(
           'Tính năng đặt lịch đang được phát triển',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -638,9 +650,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       SnackBar(
         content: Text(
           'Bắt đầu ghi âm',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -650,17 +662,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           'Chỉnh sửa buổi học',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: textDark,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'Tính năng sửa lịch đang được phát triển',
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
         ),
         actions: [
           TextButton(
@@ -678,7 +690,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _showOptionsMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: cardLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -706,7 +718,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       title: Text(
         label,
         style: GoogleFonts.inter(
-          color: isDestructive ? Colors.red : Colors.white,
+          color: isDestructive ? Colors.red : textDark,
           fontSize: 15,
         ),
       ),
@@ -778,3 +790,5 @@ class ChatMessage {
     this.duration,
   });
 }
+
+

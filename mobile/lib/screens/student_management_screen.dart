@@ -16,6 +16,15 @@ class StudentManagementScreen extends StatefulWidget {
 class _StudentManagementScreenState extends State<StudentManagementScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
+
   // Mock data
   final List<Student> _students = [
     Student(
@@ -75,7 +84,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -106,10 +115,10 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -126,7 +135,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E2E2E),
+                    color: cardAlt,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -143,19 +152,19 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   children: [
                     Text(
                       'Quản lý học viên',
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    style: GoogleFonts.inter(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: textDark,
+                    ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Theo dõi tiến độ • Lịch học • Học phí',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white54,
-                      ),
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: textMuted,
+                    ),
                     ),
                   ],
                 ),
@@ -191,7 +200,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF2E2E2E),
+              color: cardAlt,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: const Color(0xFFD4AF37), size: 20),
@@ -227,13 +236,13 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   Widget _buildTabs() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: const Color(0xFF1E1E1E),
+      color: cardLight,
       child: TabBar(
         controller: _tabController,
-        indicatorColor: const Color(0xFFD4AF37),
+        indicatorColor: primaryGold,
         indicatorWeight: 3,
-        labelColor: const Color(0xFFD4AF37),
-        unselectedLabelColor: Colors.white60,
+        labelColor: primaryGold,
+        unselectedLabelColor: textMuted,
         labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
         unselectedLabelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.normal),
         tabs: const [
@@ -297,7 +306,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             '5 học viên đang chậm nhịp ➜ đề xuất bài luyện BPM 60 trong 7 ngày',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white,
+              color: textDark,
               height: 1.5,
             ),
           ),
@@ -349,7 +358,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textDark,
           ),
         ),
         const SizedBox(height: 12),
@@ -373,7 +382,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isWarning
@@ -403,7 +412,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             label,
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.white60,
+              color: textMuted,
             ),
           ),
         ],
@@ -421,17 +430,17 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           children: [
             Text(
               'Danh sách học viên',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textDark,
+            ),
             ),
             Text(
               '${_students.length} học viên',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: Colors.white54,
+                color: textMuted,
               ),
             ),
           ],
@@ -454,7 +463,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -515,7 +524,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -540,7 +549,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                icon: const Icon(Icons.more_vert, color: textMuted),
                 onPressed: () => _showStudentMenu(student),
               ),
             ],
@@ -555,7 +564,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                 'Tiến độ tuần',
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  color: Colors.white70,
+                  color: textMuted,
                 ),
               ),
               Text(
@@ -574,7 +583,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             child: LinearProgressIndicator(
               value: student.progressPercent / 100,
               minHeight: 8,
-              backgroundColor: const Color(0xFF2E2E2E),
+              backgroundColor: cardAlt,
               valueColor: AlwaysStoppedAnimation<Color>(
                 student.progressPercent >= 80
                     ? const Color(0xFFD4AF37)
@@ -597,7 +606,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                       'Luyện tập gần nhất',
                       style: GoogleFonts.inter(
                         fontSize: 11,
-                        color: Colors.white54,
+                        color: textMuted,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -606,7 +615,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                        color: textMuted,
                       ),
                     ),
                   ],
@@ -647,7 +656,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                 'Buổi tiếp theo: ${student.nextSession}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white70,
+                  color: textMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -679,8 +688,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                     style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
+                    foregroundColor: textDark,
+                    side: const BorderSide(color: borderLight),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -781,7 +790,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   void _showStudentMenu(Student student) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: cardLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -792,17 +801,17 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           children: [
             ListTile(
               leading: const Icon(Icons.edit, color: Color(0xFFD4AF37)),
-              title: Text('Chỉnh sửa thông tin', style: GoogleFonts.inter(color: Colors.white)),
+              title: Text('Chỉnh sửa thông tin', style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.schedule, color: Color(0xFFD4AF37)),
-              title: Text('Xem lịch học', style: GoogleFonts.inter(color: Colors.white)),
+              title: Text('Xem lịch học', style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.payment, color: Color(0xFFD4AF37)),
-              title: Text('Quản lý học phí', style: GoogleFonts.inter(color: Colors.white)),
+              title: Text('Quản lý học phí', style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
@@ -842,3 +851,6 @@ class Student {
     required this.nextSession,
   });
 }
+
+
+

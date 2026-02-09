@@ -24,6 +24,15 @@ class StudentDetailScreen extends StatefulWidget {
 
 class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // Light Mode Palette
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color backgroundLight = Color(0xFFF7F7F7);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
   
   // Mock data
   final int _recentScore = 92;
@@ -62,7 +71,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -103,7 +112,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -120,7 +129,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -138,7 +147,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
@@ -148,7 +157,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E2E),
+                color: cardAlt,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -192,7 +201,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 widget.studentAvatar,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFF2E2E2E),
+                  color: cardAlt,
                   child: const Icon(
                     Icons.person,
                     color: Color(0xFFD4AF37),
@@ -214,7 +223,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -247,7 +256,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                   'Học viên đang theo học',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey[400],
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -266,7 +275,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: cardLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: const Color(0xFFD4AF37),
@@ -305,7 +314,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                     'Mục tiêu',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: textMuted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -315,7 +324,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: textDark,
                     ),
                   ),
                 ],
@@ -369,7 +378,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -387,7 +396,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                   label,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey[400],
+                    color: textMuted,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -408,7 +417,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             subtitle,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -423,7 +432,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TabBar(
@@ -431,7 +440,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
         indicatorColor: const Color(0xFFD4AF37),
         indicatorWeight: 3,
         labelColor: const Color(0xFFD4AF37),
-        unselectedLabelColor: Colors.white60,
+        unselectedLabelColor: textMuted,
         labelStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
         unselectedLabelStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.normal),
         tabs: const [
@@ -471,7 +480,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -488,7 +497,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: textDark,
                 ),
               ),
               Text(
@@ -508,7 +517,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             child: LinearProgressIndicator(
               value: _weekProgress,
               minHeight: 12,
-              backgroundColor: const Color(0xFF2E2E2E),
+              backgroundColor: cardAlt,
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
             ),
           ),
@@ -521,7 +530,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -550,7 +559,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                   'Bài đang luyện',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -559,7 +568,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
               ],
@@ -583,7 +592,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             GestureDetector(
@@ -619,7 +628,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 ),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: cardLight,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -640,7 +649,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                           note.date,
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: Colors.grey[500],
+                            color: textMuted,
                           ),
                         ),
                       ],
@@ -651,7 +660,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                         note.content,
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: textDark,
                           height: 1.4,
                         ),
                         maxLines: 4,
@@ -673,7 +682,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cardLight,
         border: Border(
           top: BorderSide(
             color: const Color(0xFFD4AF37).withOpacity(0.2),
@@ -789,7 +798,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   void _showMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: cardLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -802,7 +811,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             _buildMenuOption(Icons.calendar_today, 'Xem lịch học', () {}),
             _buildMenuOption(Icons.attach_money, 'Quản lý học phí', () {}),
             _buildMenuOption(Icons.pause_circle_outline, 'Tạm dừng học', () {}),
-            const Divider(color: Color(0xFF2E2E2E), height: 32),
+            const Divider(color: borderLight, height: 32),
             _buildMenuOption(
               Icons.delete_outline,
               'Xóa học viên',
@@ -824,7 +833,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
       title: Text(
         label,
         style: GoogleFonts.inter(
-          color: isDestructive ? Colors.red : Colors.white,
+          color: isDestructive ? Colors.red : textDark,
           fontSize: 15,
         ),
       ),
@@ -839,22 +848,22 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: cardLight,
         title: Text(
           'Thêm ghi chú',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: textDark,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: TextField(
           maxLines: 4,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: textDark),
           decoration: InputDecoration(
             hintText: 'Nhập nội dung ghi chú...',
-            hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
+            hintStyle: GoogleFonts.inter(color: textMuted),
             filled: true,
-            fillColor: const Color(0xFF2E2E2E),
+            fillColor: cardAlt,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -866,7 +875,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Hủy',
-              style: GoogleFonts.inter(color: Colors.grey[400]),
+              style: GoogleFonts.inter(color: textMuted),
             ),
           ),
           ElevatedButton(
@@ -876,9 +885,9 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 SnackBar(
                   content: Text(
                     'Đã lưu ghi chú',
-                    style: GoogleFonts.inter(color: Colors.white),
+                    style: GoogleFonts.inter(color: textDark),
                   ),
-                  backgroundColor: const Color(0xFF1E1E1E),
+                  backgroundColor: cardLight,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -908,3 +917,7 @@ class TeacherNote {
     required this.content,
   });
 }
+
+
+
+

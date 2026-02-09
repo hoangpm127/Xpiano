@@ -9,17 +9,20 @@ class TeacherWalletScreen extends StatefulWidget {
 }
 
 class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
-  // Spiano Dark Luxury Colors
+  // Light Mode Palette
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color cardDark = Color(0xFF1E1E1E);
-  static const Color cardDarker = Color(0xFF2E2E2E);
+  static const Color backgroundDark = Color(0xFFF7F7F7);
+  static const Color cardDark = Color(0xFFFFFFFF);
+  static const Color cardDarker = Color(0xFFF1F1F1);
+  static const Color borderLight = Color(0xFFE6E6E6);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textMuted = Color(0xFF6B6B6B);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundDark,
       body: SafeArea(
         child: Column(
           children: [
@@ -72,7 +75,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
         color: backgroundDark,
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.05),
+            color: borderLight,
             width: 1,
           ),
         ),
@@ -89,13 +92,13 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                 color: cardDark,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
+                  color: borderLight,
                   width: 1,
                 ),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Colors.white,
+                color: textDark,
                 size: 18,
               ),
             ),
@@ -110,7 +113,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
           ),
@@ -197,7 +200,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[400],
+                    color: textMuted,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -272,7 +275,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
           child: _buildStatCard(
             label: 'Tháng này',
             value: '28.4tr',
-            valueColor: Colors.white,
+            valueColor: textDark,
           ),
         ),
         
@@ -283,7 +286,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
           child: _buildStatCard(
             label: 'Số buổi',
             value: '86',
-            valueColor: Colors.white,
+            valueColor: textDark,
           ),
         ),
         
@@ -316,7 +319,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
         color: cardDark,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: borderLight,
           width: 1,
         ),
       ),
@@ -328,7 +331,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[500],
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -366,7 +369,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
         color: cardDark,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: borderLight,
           width: 1,
         ),
       ),
@@ -395,7 +398,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[400],
+                    color: textMuted,
                   ),
                 ),
               ),
@@ -462,7 +465,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
-                color: Colors.grey[500],
+                color: textMuted,
               ),
               textAlign: TextAlign.center,
             ),
@@ -486,7 +489,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             TextButton(
@@ -536,12 +539,12 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
         
         _buildTransactionItem(
           icon: Icons.remove_circle_outline,
-          iconColor: Colors.grey[500]!,
+          iconColor: textMuted!,
           iconBg: Colors.grey.withOpacity(0.1),
           title: 'Phí nền tảng (10%)',
           subtitle: 'Đã trừ tự động',
           amount: '- 60,000đ',
-          amountColor: Colors.grey[500]!,
+          amountColor: textMuted!,
         ),
         
         const SizedBox(height: 12),
@@ -586,7 +589,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
         color: cardDark,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: borderLight,
           width: 1,
         ),
       ),
@@ -619,7 +622,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: textDark,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -628,7 +631,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    color: Colors.grey[500],
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -670,7 +673,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[700],
+                color: textMuted,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -683,7 +686,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: textDark,
               ),
             ),
             
@@ -715,7 +718,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                         hintStyle: GoogleFonts.inter(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
-                          color: Colors.grey[600],
+                          color: textMuted,
                         ),
                         border: InputBorder.none,
                       ),
@@ -726,7 +729,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[500],
+                      color: textMuted,
                     ),
                   ),
                 ],
@@ -812,7 +815,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
           color: cardDark,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.white.withOpacity(0.1),
+            color: borderLight,
             width: 1,
           ),
         ),
@@ -821,7 +824,7 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: textDark,
           ),
           textAlign: TextAlign.center,
         ),
@@ -829,3 +832,4 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
     );
   }
 }
+
