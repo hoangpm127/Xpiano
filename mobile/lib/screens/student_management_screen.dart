@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'student_detail_screen.dart';
+import 'create_homework_screen.dart';
 
 class StudentManagementScreen extends StatefulWidget {
   const StudentManagementScreen({super.key});
@@ -675,13 +676,13 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Giao bài cho ${student.name}',
-                          style: GoogleFonts.inter(color: Colors.white),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateHomeworkScreen(
+                          studentName: student.name,
+                          studentLevel: student.level,
                         ),
-                        backgroundColor: const Color(0xFFD4AF37),
                       ),
                     );
                   },

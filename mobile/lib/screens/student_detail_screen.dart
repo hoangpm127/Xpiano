@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'create_homework_screen.dart';
 
 class StudentDetailScreen extends StatefulWidget {
   final String studentName;
@@ -739,14 +740,13 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
               ),
               child: ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Tính năng Tạo bài tập đang được phát triển',
-                        style: GoogleFonts.inter(color: Colors.white),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateHomeworkScreen(
+                        studentName: widget.studentName,
+                        studentLevel: widget.level,
                       ),
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
