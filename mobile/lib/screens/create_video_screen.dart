@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'upload_video_screen.dart';
 
 class CreateVideoScreen extends StatefulWidget {
-  const CreateVideoScreen({Key? key}) : super(key: key);
+  const CreateVideoScreen({super.key});
 
   @override
   State<CreateVideoScreen> createState() => _CreateVideoScreenState();
@@ -44,29 +44,29 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
                           icon: Icons.videocam_rounded,
                           iconColor: Colors.red[400]!,
                           title: 'Quay video',
-                          subtitle: 'Dung camera de quay ngay',
+                          subtitle: 'Dùng camera để quay ngay',
                           badge: 'Nhanh',
-                          onTap: _handleRecordVideo,
+                          onTap: _openUploadVideo,
                           delay: 120,
                         ),
                         const SizedBox(height: 14),
                         _buildMainOption(
                           icon: Icons.photo_library_rounded,
                           iconColor: Colors.blue[400]!,
-                          title: 'Chon tu thu vien',
-                          subtitle: 'Dang video co san tu may',
-                          badge: 'Pho bien',
-                          onTap: _handlePickFromGallery,
+                          title: 'Chọn từ thư viện',
+                          subtitle: 'Đăng video có sẵn từ máy',
+                          badge: 'Phổ biến',
+                          onTap: _openUploadVideo,
                           delay: 200,
                         ),
                         const SizedBox(height: 14),
                         _buildMainOption(
                           icon: Icons.music_note_rounded,
                           iconColor: primaryGold,
-                          title: 'Tao voi nhac nen',
-                          subtitle: 'Them nhac piano vao video',
-                          badge: 'Sang tao',
-                          onTap: _handleCreateWithMusic,
+                          title: 'Tạo với nhạc nền',
+                          subtitle: 'Thêm nhạc piano vào video',
+                          badge: 'Sáng tạo',
+                          onTap: _openUploadVideo,
                           delay: 280,
                         ),
                         const SizedBox(height: 26),
@@ -77,7 +77,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
-                                'TEMPLATE',
+                                'MẪU GỢI Ý',
                                 style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -180,7 +180,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
                   const Icon(Icons.help_outline, color: darkGold, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Tro giup',
+                    'Trợ giúp',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -223,7 +223,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tao video moi',
+            'Tạo video mới',
             style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w700,
@@ -232,7 +232,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Dang video day piano voi bo cuc sang va de doc.',
+            'Đăng video dạy piano với bố cục sáng và dễ đọc.',
             style: GoogleFonts.inter(
               fontSize: 14,
               height: 1.45,
@@ -242,9 +242,9 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              _buildMetric('9:16', 'Ty le de xuat'),
+              _buildMetric('9:16', 'Tỷ lệ đề xuất'),
               const SizedBox(width: 10),
-              _buildMetric('15-60s', 'Do dai tot'),
+              _buildMetric('15-60s', 'Độ dài tốt'),
             ],
           ),
         ],
@@ -371,31 +371,30 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
           ],
         ),
       ),
-    ).animate().fadeIn(delay: delay.ms).slideX(
-          begin: 0.22,
-          duration: 350.ms,
-          delay: delay.ms,
-        );
+    )
+        .animate()
+        .fadeIn(delay: delay.ms)
+        .slideX(begin: 0.22, duration: 350.ms, delay: delay.ms);
   }
 
   Widget _buildTemplateList() {
     final templates = [
-      _TemplateItem(
-        title: 'Bai hoc 5 phut',
-        subtitle: 'Hook nhanh + demo ngon',
-        color: const Color(0xFF4F46E5),
+      const _TemplateItem(
+        title: 'Bài học 5 phút',
+        subtitle: 'Hook nhanh + demo luyện ngón',
+        color: Color(0xFF4F46E5),
         icon: Icons.timer_rounded,
       ),
-      _TemplateItem(
-        title: 'Cover ngan',
-        subtitle: 'Mo bai + cao trao + outro',
-        color: const Color(0xFFEC4899),
+      const _TemplateItem(
+        title: 'Cover ngắn',
+        subtitle: 'Mở bài + cao trào + outro',
+        color: Color(0xFFEC4899),
         icon: Icons.music_video_rounded,
       ),
-      _TemplateItem(
+      const _TemplateItem(
         title: 'Tips & Tricks',
-        subtitle: 'Mot meo / mot video',
-        color: const Color(0xFFF97316),
+        subtitle: 'Một mẹo / một video',
+        color: Color(0xFFF97316),
         icon: Icons.tips_and_updates_rounded,
       ),
     ];
@@ -408,7 +407,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
           padding:
               EdgeInsets.only(bottom: index == templates.length - 1 ? 0 : 12),
           child: GestureDetector(
-            onTap: () => _handleTemplateSelected(item.title),
+            onTap: _openUploadVideo,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -464,40 +463,11 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
     );
   }
 
-  void _handleRecordVideo() {
+  void _openUploadVideo() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const UploadVideoScreen(videoPath: null),
-      ),
-    );
-  }
-
-  void _handlePickFromGallery() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(videoPath: null),
-      ),
-    );
-  }
-
-  void _handleCreateWithMusic() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(videoPath: null),
-      ),
-    );
-  }
-
-  void _handleTemplateSelected(String templateName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text('Su dung template: $templateName', style: GoogleFonts.inter()),
-        backgroundColor: darkGold,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -513,7 +483,7 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
             const Icon(Icons.lightbulb_outline, color: darkGold),
             const SizedBox(width: 10),
             Text(
-              'Meo tao video',
+              'Mẹo tạo video',
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -525,21 +495,21 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHelpItem('Quay doc 9:16 de hien thi tot hon tren feed.'),
-            const SizedBox(height: 10),
-            _buildHelpItem('Mo dau 3 giay dau can ro noi dung chinh.'),
-            const SizedBox(height: 10),
-            _buildHelpItem('Anh sang on dinh giup video trong va net hon.'),
-            const SizedBox(height: 10),
-            _buildHelpItem('Tieu de ngan gon + hashtag dung chu de.'),
+          children: const [
+            _HelpItem('Quay dọc 9:16 để hiển thị tốt hơn trên feed.'),
+            SizedBox(height: 10),
+            _HelpItem('Mở đầu 3 giây đầu cần rõ nội dung chính.'),
+            SizedBox(height: 10),
+            _HelpItem('Ánh sáng ổn định giúp video trong và nét hơn.'),
+            SizedBox(height: 10),
+            _HelpItem('Tiêu đề ngắn gọn + hashtag đúng chủ đề.'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Da hieu',
+              'Đã hiểu',
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -551,21 +521,32 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
       ),
     );
   }
+}
 
-  Widget _buildHelpItem(String text) {
+class _HelpItem extends StatelessWidget {
+  final String text;
+
+  const _HelpItem(this.text);
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 4),
-          child: Icon(Icons.check_circle, size: 14, color: darkGold),
+          child: Icon(Icons.check_circle,
+              size: 14, color: _CreateVideoScreenState.darkGold),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style:
-                GoogleFonts.inter(fontSize: 14, color: textMuted, height: 1.45),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: _CreateVideoScreenState.textMuted,
+              height: 1.45,
+            ),
           ),
         ),
       ],

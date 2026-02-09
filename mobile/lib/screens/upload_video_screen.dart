@@ -28,8 +28,8 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   final TextEditingController _hashtagController = TextEditingController();
 
   bool _affiliateLinkEnabled = true;
-  String _selectedGoal = 'Hoc ngay (Booking giao vien)';
-  String _selectedTeacher = 'Co Linh - 4.9*';
+  String _selectedGoal = 'Học ngay (Booking giáo viên)';
+  String _selectedTeacher = 'Cô Linh - 4.9*';
 
   final List<String> _hashtagSuggestions = [
     '#luyenngon',
@@ -119,7 +119,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Dang tai video',
+              'Đăng tải video',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -137,7 +137,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 border: Border.all(color: borderLight),
               ),
               child: Text(
-                'Luu nhap',
+                'Lưu nháp',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -253,7 +253,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tieu de',
+          'Tiêu đề',
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -272,7 +272,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             style: GoogleFonts.inter(fontSize: 15, color: textDark),
             maxLines: 2,
             decoration: InputDecoration(
-              hintText: 'Nhap tieu de video...',
+              hintText: 'Nhập tiêu đề video...',
               hintStyle: GoogleFonts.inter(fontSize: 15, color: textMuted),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
@@ -377,7 +377,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Cai dat',
+            'Cài đặt',
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -386,13 +386,13 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           ),
           const SizedBox(height: 20),
           _buildDropdown(
-            label: 'Gan muc tieu',
+            label: 'Gắn mục tiêu',
             value: _selectedGoal,
             onTap: _showGoalPicker,
           ),
           const SizedBox(height: 20),
           _buildDropdown(
-            label: 'Giao vien lien quan',
+            label: 'Giáo viên liên quan',
             value: _selectedTeacher,
             onTap: _showTeacherPicker,
           ),
@@ -461,7 +461,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dinh kem link gioi thieu',
+                'Đính kèm link giới thiệu',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -470,7 +470,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Link se gan vao video de ghi nhan thuong minh bach.',
+                'Link sẽ gắn vào video để ghi nhận thưởng minh bạch.',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -560,7 +560,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 ],
               ),
               child: Text(
-                'Dang',
+                'Đăng',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -572,7 +572,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Bang viec dang, ban dong y tieu chuan cong dong.',
+            'Bằng việc đăng, bạn đồng ý tiêu chuẩn cộng đồng.',
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w400,
@@ -588,7 +588,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   void _handleSaveDraft() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Da luu nhap', style: GoogleFonts.inter()),
+        content: Text('Đã lưu nháp', style: GoogleFonts.inter()),
         backgroundColor: darkGold,
         behavior: SnackBarBehavior.floating,
       ),
@@ -600,7 +600,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-              Text('Vui long nhap tieu de video', style: GoogleFonts.inter()),
+              Text('Vui lòng nhập tiêu đề video', style: GoogleFonts.inter()),
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
         ),
@@ -627,7 +627,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Video dang xu ly',
+              'Video đang xử lý',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -636,7 +636,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Video cua ban se hien thi tren feed sau khi duoc xu ly (thuong 5-10 phut).',
+              'Video của bạn sẽ hiển thị trên feed sau khi được xử lý (thường 5-10 phút).',
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: textMuted,
@@ -659,7 +659,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Ve trang chu',
+                  'Về trang chủ',
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -677,17 +677,17 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
 
   void _showGoalPicker() {
     final goals = [
-      'Hoc ngay (Booking giao vien)',
-      'Muon dan',
-      'Xem de giai tri',
-      'Khong gan muc tieu',
+      'Học ngay (Booking giáo viên)',
+      'Mượn đàn',
+      'Xem để giải trí',
+      'Không gắn mục tiêu',
     ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => _buildPickerSheet(
-        title: 'Chon muc tieu',
+        title: 'Chọn mục tiêu',
         options: goals,
         selected: _selectedGoal,
         onSelected: (value) {
@@ -701,17 +701,17 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
 
   void _showTeacherPicker() {
     final teachers = [
-      'Co Linh - 4.9*',
-      'Thay Minh - 4.8*',
-      'Co Hang - 4.7*',
-      'Khong chon giao vien',
+      'Cô Linh - 4.9*',
+      'Thầy Minh - 4.8*',
+      'Cô Hằng - 4.7*',
+      'Không chọn giáo viên',
     ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => _buildPickerSheet(
-        title: 'Chon giao vien',
+        title: 'Chọn giáo viên',
         options: teachers,
         selected: _selectedTeacher,
         onSelected: (value) {

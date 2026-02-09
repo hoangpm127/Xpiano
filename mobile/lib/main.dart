@@ -16,13 +16,13 @@ import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabase
   await Supabase.initialize(
     url: 'https://pjgjusdmzxrhgiptfvbg.supabase.co',
     anonKey: 'sb_publishable_GMnCRFvRGqElGLerTiE-3g_YpGm-KoW',
   );
-  
+
   // Make the status bar transparent for full-screen immersive experience
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -32,12 +32,12 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  
+
   // Enable edge-to-edge mode
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
   );
-  
+
   runApp(const PianoSocialFeedApp());
 }
 
@@ -47,7 +47,7 @@ class PianoSocialFeedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Piano Social Feed',
+      title: 'Xpiano',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -57,7 +57,7 @@ class PianoSocialFeedApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // Use SplashScreen to check session on app start
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
     );
   }
 }
@@ -80,9 +80,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   late Future<List<FeedItem>> _feedFuture;
   final PageController _pageController = PageController(keepPage: true);
   int _selectedIndex = 0;
-  
+
   // Guest Mode State
-  bool _isGuest = true; 
+  bool _isGuest = true;
 
   @override
   void initState() {
@@ -91,7 +91,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     // Check actual auth state
     _checkAuthState();
   }
-  
+
   void _checkAuthState() {
     final session = Supabase.instance.client.auth.currentSession;
     setState(() {
@@ -116,7 +116,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
       ).then((result) {
         // Re-check auth status after sheet closes
         _checkAuthState();
-        
+
         // If login was successful, execute the action
         if (result == true) {
           action();
@@ -146,18 +146,22 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                     );
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Lỗi: ${snapshot.error}', style: GoogleFonts.inter(color: Colors.white)));
+                    return Center(
+                        child: Text('Lỗi: ${snapshot.error}',
+                            style: GoogleFonts.inter(color: Colors.white)));
                   }
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('Chưa có bài viết nào', style: GoogleFonts.inter(color: Colors.white)));
+                    return Center(
+                        child: Text('Chưa có bài viết nào',
+                            style: GoogleFonts.inter(color: Colors.white)));
                   }
                   return _buildFeedView(snapshot.data!);
                 },
               ),
-              
+
               // 1: Search - Piano Rental
               const PianoRentalScreen(),
-              
+
               // 2: Add - Create Video
               const CreateVideoScreen(),
 
@@ -168,7 +172,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
               const ProfileScreen(),
             ],
           ),
-          
+
           // Bottom Navigation
           _buildBottomNavigation(context),
         ],
@@ -269,13 +273,13 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
         children: [
           // Background Image with Overlay
           _buildBackground(item.mediaUrl, key: ValueKey('bg_${item.id}')),
-          
+
           // Top Verified Badge (if user is verified)
           if (item.isVerified) _buildTopUserBadge(item),
-          
+
           // Right Sidebar
           _buildRightSidebar(item),
-          
+
           // Bottom Content Area
           _buildBottomContent(item),
         ],
@@ -291,7 +295,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
           // Background Image
           Image.network(
             key: key,
-            mediaUrl.isNotEmpty ? mediaUrl : 'https://via.placeholder.com/1080x1920/000000/FFFFFF?text=No+Image',
+            mediaUrl.isNotEmpty
+                ? mediaUrl
+                : 'https://via.placeholder.com/1080x1920/000000/FFFFFF?text=No+Image',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -354,14 +360,14 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // Verified Badge
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
@@ -453,12 +459,15 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            item.authorAvatar.isNotEmpty ? item.authorAvatar : 'https://via.placeholder.com/150',
+                            item.authorAvatar.isNotEmpty
+                                ? item.authorAvatar
+                                : 'https://via.placeholder.com/150',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey,
-                                child: const Icon(Icons.person, color: Colors.white),
+                                child: const Icon(Icons.person,
+                                    color: Colors.white),
                               );
                             },
                           ),
@@ -468,8 +477,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         bottom: 0,
                         left: 10,
                         child: GestureDetector(
-                           onTap: () => _checkLogin(() {}),
-                           child: Container(
+                          onTap: () => _checkLogin(() {}),
+                          child: Container(
                             width: 16,
                             height: 16,
                             decoration: BoxDecoration(
@@ -498,7 +507,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 GestureDetector(
                   onTap: () => _checkLogin(() {
                     // TODO: Implement Like logic
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Liked!')));
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('Liked!')));
                   }),
                   child: _buildSidebarAction(
                     icon: Icons.favorite_border,
@@ -509,7 +519,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 // Comment Button
                 GestureDetector(
                   onTap: () => _checkLogin(() {}),
-                   child: _buildSidebarAction(
+                  child: _buildSidebarAction(
                     icon: Icons.chat_bubble_outline,
                     label: item.formattedComments,
                   ),
@@ -517,8 +527,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 const SizedBox(height: 24),
                 // Bookmark Button
                 GestureDetector(
-                   onTap: () => _checkLogin(() {}),
-                   child: _buildSidebarAction(
+                  onTap: () => _checkLogin(() {}),
+                  child: _buildSidebarAction(
                     icon: Icons.bookmark_border,
                     label: item.formattedShares,
                   ),
@@ -526,8 +536,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 const SizedBox(height: 24),
                 // Share Button
                 GestureDetector(
-                   onTap: () => _checkLogin(() {}),
-                   child: _buildSidebarAction(
+                  onTap: () => _checkLogin(() {}),
+                  child: _buildSidebarAction(
                     icon: Icons.reply,
                     label: '',
                   ),
@@ -644,7 +654,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -708,89 +719,96 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                   // Borrow Piano Button - Only show if video has pianoId
                   if (item.pianoId != null && item.pianoId!.isNotEmpty)
                     Expanded(
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: const Color(0xFFE5E5E5),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
+                      child: Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () => _checkLogin(() {
-                            // If video has piano_id, navigate to that specific piano
-                            if (item.pianoId != null && item.pianoId!.isNotEmpty) {
-                              // Mock piano data for the specific piano
-                              final pianoData = {
-                                'id': item.pianoId,
-                                'name': 'Yamaha C3X Grand Piano',
-                                'category': 'Grand Piano',
-                                'price': '500,000đ/giờ',
-                                'location': item.location ?? 'TP.HCM',
-                                'rating': 4.9,
-                                'reviews': 128,
-                                'image': item.mediaUrl,
-                                'available': true,
-                                'features': ['Âm thanh đỉnh cao', 'Phòng cách âm', 'Điều hòa'],
-                              };
-                              
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PianoDetailScreen(
-                                    pianoId: item.pianoId!,
-                                    pianoData: pianoData,
+                          border: Border.all(
+                            color: const Color(0xFFE5E5E5),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(22),
+                            onTap: () => _checkLogin(() {
+                              // If video has piano_id, navigate to that specific piano
+                              if (item.pianoId != null &&
+                                  item.pianoId!.isNotEmpty) {
+                                // Mock piano data for the specific piano
+                                final pianoData = {
+                                  'id': item.pianoId,
+                                  'name': 'Yamaha C3X Grand Piano',
+                                  'category': 'Grand Piano',
+                                  'price': '500,000đ/giờ',
+                                  'location': item.location ?? 'TP.HCM',
+                                  'rating': 4.9,
+                                  'reviews': 128,
+                                  'image': item.mediaUrl,
+                                  'available': true,
+                                  'features': [
+                                    'Âm thanh đỉnh cao',
+                                    'Phòng cách âm',
+                                    'Điều hòa'
+                                  ],
+                                };
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PianoDetailScreen(
+                                      pianoId: item.pianoId!,
+                                      pianoData: pianoData,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                // If no piano_id, navigate to general booking screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const BookingScreen()),
+                                );
+                              }
+                            }),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.piano,
+                                  color: Color(0xFF333333),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Mượn Đàn',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black,
                                   ),
                                 ),
-                              );
-                            } else {
-                              // If no piano_id, navigate to general booking screen
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const BookingScreen()),
-                              );
-                            }
-                          }),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.piano,
-                                color: Color(0xFF333333),
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Mượn Đàn',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  
+
                   // Add spacing only if piano button is shown
                   if (item.pianoId != null && item.pianoId!.isNotEmpty)
                     const SizedBox(width: 12),
-                  
+
                   // Learn Now Button
                   Expanded(
                     child: Container(
@@ -855,7 +873,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   Widget _buildBottomNavigation(BuildContext context) {
     // Dark footer only on Home tab
     final isDark = _selectedIndex == 0;
-    
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -864,8 +883,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
         decoration: BoxDecoration(
           color: isDark ? backgroundDark : backgroundLight,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
           border: Border(
             top: BorderSide(
@@ -881,90 +900,86 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.home,
-                    label: 'Home',
-                    isActive: _selectedIndex == 0,
-                    isDark: isDark,
-                    onTap: () => setState(() => _selectedIndex = 0),
-                  ),
-                  _buildNavItem(
-                    icon: Icons.explore,
-                    label: 'Khám phá',
-                    isActive: _selectedIndex == 1,
-                    isDark: isDark,
-                    onTap: () => setState(() => _selectedIndex = 1),
-                  ),
-                  // Center Add Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFE6C86E),
-                            Color(0xFFBF953F),
-                            Color(0xFFE6C86E),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryGold.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            10,
+            10,
+            10,
+            bottomInset > 0 ? bottomInset + 2 : 14,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavItem(
+                icon: Icons.home,
+                label: 'Home',
+                isActive: _selectedIndex == 0,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 0),
+              ),
+              _buildNavItem(
+                icon: Icons.explore,
+                label: 'Khám phá',
+                isActive: _selectedIndex == 1,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 1),
+              ),
+              Transform.translate(
+                offset: const Offset(0, -6),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFE6C86E),
+                        Color(0xFFBF953F),
+                        Color(0xFFE6C86E),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGold.withOpacity(0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => setState(() => _selectedIndex = 2),
-                          child: const Center(
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => setState(() => _selectedIndex = 2),
+                      child: const Center(
+                        child: Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 30,
                         ),
                       ),
                     ),
                   ),
-                  _buildNavItem(
-                    icon: Icons.message_outlined,
-                    label: 'Hộp thư',
-                    isActive: _selectedIndex == 3,
-                    isDark: isDark,
-                    onTap: () => setState(() => _selectedIndex = 3),
-                  ),
-                  _buildNavItem(
-                    icon: Icons.person_outline,
-                    label: 'Hồ sơ',
-                    isActive: _selectedIndex == 4,
-                    isDark: isDark,
-                    onTap: () => setState(() => _selectedIndex = 4),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            // Bottom Indicator
-          ],
+              _buildNavItem(
+                icon: Icons.message_outlined,
+                label: 'Hộp thư',
+                isActive: _selectedIndex == 3,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 3),
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline,
+                label: 'Hồ sơ',
+                isActive: _selectedIndex == 4,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 4),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -979,27 +994,29 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   }) {
     final color = isActive
         ? primaryGold
-        : (isDark ? const Color(0xFFB0B0B0) : const Color(0xFF9E9E9E)); // Inactive
-    
+        : (isDark
+            ? const Color(0xFFB0B0B0)
+            : const Color(0xFF9E9E9E)); // Inactive
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 60,
+        width: 64,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               color: color,
-              size: 24,
+              size: 23,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
                 color: color,
               ),
               textAlign: TextAlign.center,

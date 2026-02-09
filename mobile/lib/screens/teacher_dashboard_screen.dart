@@ -11,6 +11,8 @@ import 'teacher_wallet_screen.dart';
 import 'teacher_reviews_screen.dart';
 import 'teacher_public_profile_screen.dart';
 import 'affiliate_dashboard_screen.dart';
+import 'account_settings_screen.dart';
+import 'notifications_list_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -30,11 +32,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   static const Color borderLight = Color(0xFFE6E6E6);
   static const Color textDark = Color(0xFF1A1A1A);
   static const Color textMuted = Color(0xFF6B6B6B);
-  
+
   bool _isOnline = true;
   int _currentNavIndex = 0;
   bool _isLoading = true;
-  
+
   // Teacher profile data from database
   String _teacherName = '';
   String? _avatarUrl;
@@ -53,7 +55,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Future<void> _loadTeacherData() async {
     try {
       final profile = await _supabaseService.getTeacherProfile();
-      
+
       if (profile != null && mounted) {
         setState(() {
           _teacherName = profile['full_name'] ?? 'Giáo viên';
@@ -95,26 +97,27 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 1. Header Area
                     _buildHeader(),
                     const SizedBox(height: 24),
-                    
+
                     // 2. Status Bar
                     _buildStatusBar(),
                     const SizedBox(height: 24),
-                    
+
                     // 3. Statistics Overview
                     _buildStatistics(),
                     const SizedBox(height: 24),
-                    
+
                     // 4. Action Section
                     _buildActionSection(),
                     const SizedBox(height: 24),
-                    
+
                     // 5. Today's Schedule
                     _buildTodaySchedule(),
                     const SizedBox(height: 80), // Space for bottom nav
@@ -185,36 +188,46 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         ).animate().fadeIn(delay: 300.ms).scale(begin: const Offset(0.8, 0.8)),
         const SizedBox(width: 8),
         // Notification Bell
-        Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: cardLight,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFD4AF37).withOpacity(0.2),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsListScreen(),
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cardLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFD4AF37).withOpacity(0.2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Color(0xFFD4AF37),
+                  size: 24,
                 ),
               ),
-              child: const Icon(
-                Icons.notifications_outlined,
-                color: Color(0xFFD4AF37),
-                size: 24,
-              ),
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ).animate().fadeIn(delay: 350.ms).scale(begin: const Offset(0.8, 0.8)),
         const SizedBox(width: 8),
         // Logout Button
@@ -266,7 +279,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 fit: BoxFit.cover,
               ),
             ),
-          ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.8, 0.8)),
+          )
+              .animate()
+              .fadeIn(delay: 400.ms)
+              .scale(begin: const Offset(0.8, 0.8)),
         ),
       ],
     );
@@ -510,16 +526,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         ],
       ),
     );
-    
-    final animatedCard = cardContent.animate().fadeIn(delay: delay.ms).scale(begin: const Offset(0.9, 0.9));
-    
+
+    final animatedCard = cardContent
+        .animate()
+        .fadeIn(delay: delay.ms)
+        .scale(begin: const Offset(0.9, 0.9));
+
     if (onTap != null) {
       return GestureDetector(
         onTap: onTap,
         child: animatedCard,
       );
     }
-    
+
     return animatedCard;
   }
 
@@ -560,7 +579,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.orange,
                   borderRadius: BorderRadius.circular(12),
@@ -1012,9 +1032,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   // HELPER METHODS
   String _formatCurrency(int amount) {
     return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
   }
 
   Future<void> _handleLogout() async {
@@ -1024,7 +1044,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         backgroundColor: cardLight,
         title: Text(
           'Đăng xuất',
-          style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
+          style:
+              GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Bạn có chắc chắn muốn đăng xuất?',
@@ -1037,12 +1058,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.redAccent)),
+            child: Text('Đăng xuất',
+                style: GoogleFonts.inter(color: Colors.redAccent)),
           ),
         ],
       ),
     );
-    
+
     if (confirmed == true && mounted) {
       await _supabaseService.signOut();
       if (mounted) {
@@ -1091,7 +1113,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     image: DecorationImage(
                       image: _avatarUrl != null
                           ? NetworkImage(_avatarUrl!)
-                          : const NetworkImage('https://i.pravatar.cc/150?img=33'),
+                          : const NetworkImage(
+                              'https://i.pravatar.cc/150?img=33'),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -1131,14 +1154,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               label: 'Xem hồ sơ',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: textDark),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TeacherPublicProfileScreen(
+                      teacherName: _teacherName,
+                      teacherAvatar: _avatarUrl,
                     ),
-                    backgroundColor: cardLight,
-                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
@@ -1148,14 +1170,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               label: 'Chỉnh sửa hồ sơ',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: textDark),
-                    ),
-                    backgroundColor: cardLight,
-                    behavior: SnackBarBehavior.floating,
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
                   ),
                 );
               },
@@ -1165,14 +1183,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               label: 'Cài đặt',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Tính năng đang được phát triển',
-                      style: GoogleFonts.inter(color: textDark),
-                    ),
-                    backgroundColor: cardLight,
-                    behavior: SnackBarBehavior.floating,
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AccountSettingsScreen(),
                   ),
                 );
               },
@@ -1192,7 +1206,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     backgroundColor: cardLight,
                     title: Text(
                       'Đăng xuất',
-                      style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.inter(
+                          color: textDark, fontWeight: FontWeight.bold),
                     ),
                     content: Text(
                       'Bạn có chắc chắn muốn đăng xuất?',
@@ -1201,21 +1216,25 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        child: Text('Không', style: GoogleFonts.inter(color: textMuted)),
+                        child: Text('Không',
+                            style: GoogleFonts.inter(color: textMuted)),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.redAccent)),
+                        child: Text('Đăng xuất',
+                            style: GoogleFonts.inter(color: Colors.redAccent)),
                       ),
                     ],
                   ),
                 );
-                
+
                 if (confirmed == true && context.mounted) {
                   await _supabaseService.signOut();
                   if (context.mounted) {
-                    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    Navigator.of(context, rootNavigator: true)
+                        .pushAndRemoveUntil(
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                       (route) => false,
                     );
                   }
@@ -1286,8 +1305,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
           );
         } else if (index == 3) {
-          // Show Profile Menu
-          _showProfileMenu(context);
+          // Navigate to account settings
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AccountSettingsScreen(),
+            ),
+          );
         }
       },
       child: Container(
@@ -1321,5 +1345,3 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     );
   }
 }
-
-

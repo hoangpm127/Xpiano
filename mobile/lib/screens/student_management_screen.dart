@@ -10,11 +10,14 @@ class StudentManagementScreen extends StatefulWidget {
   const StudentManagementScreen({super.key});
 
   @override
-  State<StudentManagementScreen> createState() => _StudentManagementScreenState();
+  State<StudentManagementScreen> createState() =>
+      _StudentManagementScreenState();
 }
 
-class _StudentManagementScreenState extends State<StudentManagementScreen> with SingleTickerProviderStateMixin {
+class _StudentManagementScreenState extends State<StudentManagementScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
 
   // Light Mode Palette
   static const Color primaryGold = Color(0xFFD4AF37);
@@ -77,8 +80,34 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  String _searchQuery = '';
+  String _selectedLevel = 'Tất cả';
+  String _selectedMode = 'Tất cả';
+  String _selectedSort = 'Tên A-Z';
+
+  List<Student> get _filteredStudents {
+    final query = _searchQuery.trim().toLowerCase();
+    final students = _students.where((student) {
+      final matchesSearch =
+          query.isEmpty || student.name.toLowerCase().contains(query);
+      final matchesLevel =
+          _selectedLevel == 'Tất cả' || student.level == _selectedLevel;
+      final matchesMode =
+          _selectedMode == 'Tất cả' || student.mode == _selectedMode;
+      return matchesSearch && matchesLevel && matchesMode;
+    }).toList();
+
+    if (_selectedSort == 'Tên Z-A') {
+      students.sort((a, b) => b.name.compareTo(a.name));
+    } else {
+      students.sort((a, b) => a.name.compareTo(b.name));
+    }
+    return students;
   }
 
   @override
@@ -92,7 +121,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             _buildTabs(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   children: [
                     _buildAIInsightSection(),
@@ -152,26 +182,26 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   children: [
                     Text(
                       'Quản lý học viên',
-                    style: GoogleFonts.inter(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textDark,
-                    ),
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textDark,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Theo dõi tiến độ • Lịch học • Học phí',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: textMuted,
-                    ),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: textMuted,
+                      ),
                     ),
                   ],
                 ),
               ),
-              _buildHeaderIcon(Icons.search, () {}),
+              _buildHeaderIcon(Icons.search, _showSearchSheet),
               const SizedBox(width: 8),
-              _buildHeaderIcon(Icons.filter_list, () {}),
+              _buildHeaderIcon(Icons.filter_list, _showFilterSheet),
               const SizedBox(width: 8),
               _buildHeaderIcon(
                 Icons.chat_bubble_outline,
@@ -243,8 +273,10 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
         indicatorWeight: 3,
         labelColor: primaryGold,
         unselectedLabelColor: textMuted,
-        labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.normal),
+        labelStyle:
+            GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.normal),
         tabs: const [
           Tab(text: 'Đang học'),
           Tab(text: 'Chờ xếp lịch'),
@@ -319,7 +351,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   SnackBar(
                     content: Text(
                       '✓ Đã áp dụng gợi ý AI!',
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                     backgroundColor: const Color(0xFFD4AF37),
                   ),
@@ -345,7 +378,10 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideX(begin: -0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 500.ms)
+        .slideX(begin: -0.1, end: 0);
   }
 
   // 3. QUICK STATS
@@ -377,7 +413,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
     ).animate().fadeIn(delay: 300.ms, duration: 500.ms);
   }
 
-  Widget _buildStatChip(String emoji, String label, String value, {bool isWarning = false}) {
+  Widget _buildStatChip(String emoji, String label, String value,
+      {bool isWarning = false}) {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
@@ -421,7 +458,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   }
 
   // 4. STUDENT LIST
+  // 4. STUDENT LIST
   Widget _buildStudentList() {
+    final filteredStudents = _filteredStudents;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -430,14 +469,14 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           children: [
             Text(
               'Danh sách học viên',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: textDark,
-            ),
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textDark,
+              ),
             ),
             Text(
-              '${_students.length} học viên',
+              ' học viên',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: textMuted,
@@ -446,15 +485,49 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           ],
         ),
         const SizedBox(height: 16),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _students.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            return _buildStudentCard(_students[index], index);
-          },
-        ),
+        if (filteredStudents.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            decoration: BoxDecoration(
+              color: cardLight,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderLight),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.search_off,
+                    color: Color(0xFFD4AF37), size: 30),
+                const SizedBox(height: 10),
+                Text(
+                  'Không tìm thấy học viên phù hợp',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Bạn có thể đổi bộ lọc hoặc từ khóa tìm kiếm.',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: textMuted,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredStudents.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              return _buildStudentCard(filteredStudents[index], index);
+            },
+          ),
       ],
     );
   }
@@ -487,13 +560,16 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                         level: student.level,
                         nextLesson: student.nextSession,
                       ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
                         const begin = Offset(1.0, 0.0);
                         const end = Offset.zero;
                         const curve = Curves.easeInOut;
-                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
                         var offsetAnimation = animation.drive(tween);
-                        return SlideTransition(position: offsetAnimation, child: child);
+                        return SlideTransition(
+                            position: offsetAnimation, child: child);
                       },
                     ),
                   );
@@ -541,7 +617,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                         const SizedBox(width: 6),
                         _buildBadge(
                           student.mode,
-                          student.mode == 'Online' ? Colors.green : Colors.orange,
+                          student.mode == 'Online'
+                              ? Colors.green
+                              : Colors.orange,
                         ),
                       ],
                     ),
@@ -555,7 +633,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Progress Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -594,7 +672,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Info Grid
           Row(
             children: [
@@ -622,7 +700,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -650,7 +729,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today, color: Color(0xFFD4AF37), size: 14),
+              const Icon(Icons.calendar_today,
+                  color: Color(0xFFD4AF37), size: 14),
               const SizedBox(width: 6),
               Text(
                 'Buổi tiếp theo: ${student.nextSession}',
@@ -663,7 +743,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -685,7 +765,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   icon: const Icon(Icons.message, size: 16),
                   label: Text(
                     'Nhắn tin',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textDark,
@@ -714,7 +795,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   icon: const Icon(Icons.assignment, size: 16),
                   label: Text(
                     'Giao bài',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD4AF37),
@@ -740,13 +822,16 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                         level: student.level,
                         nextLesson: student.nextSession,
                       ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
                         const begin = Offset(1.0, 0.0);
                         const end = Offset.zero;
                         const curve = Curves.easeInOut;
-                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
                         var offsetAnimation = animation.drive(tween);
-                        return SlideTransition(position: offsetAnimation, child: child);
+                        return SlideTransition(
+                            position: offsetAnimation, child: child);
                       },
                     ),
                   );
@@ -757,7 +842,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
                 child: const Icon(Icons.trending_up, size: 18),
               ),
@@ -765,7 +851,10 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           ),
         ],
       ),
-    ).animate().fadeIn(delay: (400 + index * 100).ms, duration: 500.ms).slideX(begin: 0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: (400 + index * 100).ms, duration: 500.ms)
+        .slideX(begin: 0.1, end: 0);
   }
 
   Widget _buildBadge(String label, Color color) {
@@ -787,6 +876,296 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
     );
   }
 
+  void _showSearchSheet() {
+    _searchController.text = _searchQuery;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(ctx).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tìm kiếm học viên',
+              style: GoogleFonts.inter(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Nhập tên học viên...',
+                hintStyle: GoogleFonts.inter(color: textMuted),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                filled: true,
+                fillColor: cardAlt,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textMuted,
+                      side: const BorderSide(color: borderLight),
+                    ),
+                    child: Text(
+                      'Xóa',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = _searchController.text.trim();
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(
+                      'Áp dụng',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterSheet() {
+    final levels = ['Tất cả', 'Beginner', 'Intermediate', 'Advanced'];
+    final modes = ['Tất cả', 'Online', 'Offline'];
+    final sorts = ['Tên A-Z', 'Tên Z-A'];
+
+    String tempLevel = _selectedLevel;
+    String tempMode = _selectedMode;
+    String tempSort = _selectedSort;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Lọc học viên',
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Trình độ',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: levels.map((level) {
+                  return _buildSelectableChip(
+                    label: level,
+                    selected: tempLevel == level,
+                    onTap: () => setModalState(() => tempLevel = level),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Trạng thái',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: modes.map((mode) {
+                  return _buildSelectableChip(
+                    label: mode,
+                    selected: tempMode == mode,
+                    onTap: () => setModalState(() => tempMode = mode),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Sắp xếp',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sorts.map((sort) {
+                  return _buildSelectableChip(
+                    label: sort,
+                    selected: tempSort == sort,
+                    onTap: () => setModalState(() => tempSort = sort),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedLevel = 'Tất cả';
+                          _selectedMode = 'Tất cả';
+                          _selectedSort = 'Tên A-Z';
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: textMuted,
+                        side: const BorderSide(color: borderLight),
+                      ),
+                      child: Text(
+                        'Đặt lại',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedLevel = tempLevel;
+                          _selectedMode = tempMode;
+                          _selectedSort = tempSort;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: Text(
+                        'Áp dụng',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectableChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFD4AF37).withOpacity(0.14) : cardAlt,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFFD4AF37) : borderLight,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? const Color(0xFFB39129) : textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showStudentMenu(Student student) {
     showModalBottomSheet(
       context: context,
@@ -801,22 +1180,26 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
           children: [
             ListTile(
               leading: const Icon(Icons.edit, color: Color(0xFFD4AF37)),
-              title: Text('Chỉnh sửa thông tin', style: GoogleFonts.inter(color: textDark)),
+              title: Text('Chỉnh sửa thông tin',
+                  style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.schedule, color: Color(0xFFD4AF37)),
-              title: Text('Xem lịch học', style: GoogleFonts.inter(color: textDark)),
+              title: Text('Xem lịch học',
+                  style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.payment, color: Color(0xFFD4AF37)),
-              title: Text('Quản lý học phí', style: GoogleFonts.inter(color: textDark)),
+              title: Text('Quản lý học phí',
+                  style: GoogleFonts.inter(color: textDark)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.block, color: Colors.red),
-              title: Text('Tạm dừng học', style: GoogleFonts.inter(color: Colors.red)),
+              title: Text('Tạm dừng học',
+                  style: GoogleFonts.inter(color: Colors.red)),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -826,7 +1209,6 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   }
 
   // 5. BOTTOM NAV
-
 }
 
 // Model
@@ -851,6 +1233,3 @@ class Student {
     required this.nextSession,
   });
 }
-
-
-

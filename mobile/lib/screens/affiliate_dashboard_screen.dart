@@ -6,24 +6,94 @@ class AffiliateDashboardScreen extends StatefulWidget {
   const AffiliateDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<AffiliateDashboardScreen> createState() => _AffiliateDashboardScreenState();
+  State<AffiliateDashboardScreen> createState() =>
+      _AffiliateDashboardScreenState();
 }
 
 class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
   // Light Mode Colors
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
-  static const Color backgroundLight = Color(0xFFFAFAFA); // Light gray background
+  static const Color backgroundLight =
+      Color(0xFFFAFAFA); // Light gray background
   static const Color cardLight = Color(0xFFFFF9F0); // Cream/beige card
-  static const Color cardDark = Color(0xFF1F1F1F); // Dark card/button for contrast
+  static const Color cardDark =
+      Color(0xFF1F1F1F); // Dark card/button for contrast
   static const Color textDark = Color(0xFF1A1A1A); // Dark text
   static const Color textGray = Color(0xFF666666); // Gray text
 
   int _selectedTabIndex = 0;
-  String _selectedPeriod = '30 ngày';
+  String _selectedPeriod = 'Tháng này';
 
-  final List<String> _periods = ['7 ngày', '30 ngày', '90 ngày', 'Tất cả'];
-  
+  final List<String> _periods = [
+    'Tuần này',
+    'Tháng này',
+    'Quý này',
+    'Tùy chỉnh ngày'
+  ];
+
+  final List<Map<String, String>> _downlineMembers = [
+    {
+      'name': 'Nguyễn Minh Anh',
+      'joined': '05/02/2026',
+      'status': 'Đang hoạt động',
+      'revenue': '1,850,000đ',
+    },
+    {
+      'name': 'Lê Hà My',
+      'joined': '02/02/2026',
+      'status': 'Đã mua gói',
+      'revenue': '950,000đ',
+    },
+    {
+      'name': 'Trần Tuấn Anh',
+      'joined': '28/01/2026',
+      'status': 'Mới đăng ký',
+      'revenue': '0đ',
+    },
+  ];
+
+  final List<Map<String, String>> _withdrawRecords = [
+    {
+      'date': '06/02/2026',
+      'amount': '12,000,000đ',
+      'status': 'Đang xử lý',
+      'bank': 'Vietcombank ••••39426',
+    },
+    {
+      'date': '30/01/2026',
+      'amount': '8,500,000đ',
+      'status': 'Hoàn tất',
+      'bank': 'MB Bank ••••18201',
+    },
+    {
+      'date': '20/01/2026',
+      'amount': '15,000,000đ',
+      'status': 'Hoàn tất',
+      'bank': 'Techcombank ••••55931',
+    },
+  ];
+
+  final List<Map<String, String>> _historyRecords = [
+    {
+      'id': '#AF-2406',
+      'time': 'Hôm nay • 14:20',
+      'event': 'Hoa hồng từ booking mới',
+      'amount': '+350,000đ',
+    },
+    {
+      'id': '#AF-2405',
+      'time': 'Hôm nay • 10:15',
+      'event': 'Hoa hồng từ mượn đàn',
+      'amount': '+50,000đ',
+    },
+    {
+      'id': '#AF-2398',
+      'time': '03/02/2026 • 09:00',
+      'event': 'Rút tiền về ngân hàng',
+      'amount': '-8,500,000đ',
+    },
+  ];
   final List<Map<String, dynamic>> _recentTransactions = [
     {
       'id': '#BK-8F29A1',
@@ -72,7 +142,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
           children: [
             // Header
             _buildHeader(),
-            
+
             // Content
             Expanded(
               child: SingleChildScrollView(
@@ -80,24 +150,24 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // Performance Grid
                     _buildPerformanceGrid().animate().fadeIn(duration: 400.ms),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Navigation Tabs
                     _buildNavigationTabs().animate().fadeIn(delay: 200.ms),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Content based on selected tab
                     _buildTabContent(),
                   ],
                 ),
               ),
             ),
-            
+
             // Footer
             _buildFooter(),
           ],
@@ -139,9 +209,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Title
               Expanded(
                 child: Text(
@@ -153,14 +223,15 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
                   ),
                 ),
               ),
-              
+
               // Period Filter
               GestureDetector(
                 onTap: () {
                   _showPeriodPicker();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
@@ -192,9 +263,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Subtitle
           Text(
             'Chỉ ghi nhận khi có giao dịch thật.',
@@ -338,10 +409,10 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
         ],
       ),
     ).animate().fadeIn(delay: delay.ms).slideY(
-      begin: 0.2,
-      duration: 400.ms,
-      delay: delay.ms,
-    );
+          begin: 0.2,
+          duration: 400.ms,
+          delay: delay.ms,
+        );
   }
 
   Widget _buildCommissionCard({required int delay}) {
@@ -416,19 +487,23 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: delay.ms).slideY(
-      begin: 0.2,
-      duration: 400.ms,
-      delay: delay.ms,
-    ).shimmer(
-      duration: 2000.ms,
-      delay: 500.ms,
-    );
+    )
+        .animate()
+        .fadeIn(delay: delay.ms)
+        .slideY(
+          begin: 0.2,
+          duration: 400.ms,
+          delay: delay.ms,
+        )
+        .shimmer(
+          duration: 2000.ms,
+          delay: 500.ms,
+        );
   }
 
   Widget _buildNavigationTabs() {
     final tabs = ['Tổng quan', 'Tuyến dưới', 'Rút tiền', 'Lịch sử'];
-    
+
     return Container(
       height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -445,7 +520,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
           final index = entry.key;
           final tab = entry.value;
           final isActive = _selectedTabIndex == index;
-          
+
           return Expanded(
             child: GestureDetector(
               onTap: () {
@@ -455,7 +530,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: isActive ? primaryGold.withOpacity(0.15) : Colors.transparent,
+                  color: isActive
+                      ? primaryGold.withOpacity(0.15)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: isActive
                       ? Border.all(color: primaryGold, width: 1.5)
@@ -509,7 +586,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Transaction List
           ...(_recentTransactions.asMap().entries.map((entry) {
             final index = entry.key;
@@ -565,9 +642,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Type Badge
           Align(
             alignment: Alignment.centerLeft,
@@ -587,9 +664,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Values Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -620,10 +697,11 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
                   ),
                 ],
               ),
-              
+
               // Right: Status Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
@@ -646,69 +724,114 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
         ],
       ),
     ).animate().fadeIn(delay: (100 + index * 50).ms).slideX(
-      begin: 0.2,
-      duration: 400.ms,
-      delay: (100 + index * 50).ms,
-    );
+          begin: 0.2,
+          duration: 400.ms,
+          delay: (100 + index * 50).ms,
+        );
   }
 
   Widget _buildDownlineTab() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.people_outline,
-            size: 64,
-            color: Colors.grey[700],
-          ),
-          const SizedBox(height: 16),
           Text(
-            'Tuyến dưới',
+            'Danh sách tuyến dưới',
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: textDark,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Quản lý người dùng được giới thiệu từ link của bạn',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          // Sample downline stats
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: cardLight,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Colors.grey[200]!,
                 width: 1,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Column(
               children: [
-                _buildDownlineStatRow('Tổng người dùng', '1,240'),
-                const SizedBox(height: 16),
+                _buildDownlineStatRow('Tổng user giới thiệu', '1,240'),
+                const SizedBox(height: 12),
                 _buildDownlineStatRow('Đang hoạt động', '856'),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 _buildDownlineStatRow('Đã chuyển đổi', '384'),
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          ..._downlineMembers.asMap().entries.map((entry) {
+            final index = entry.key;
+            final member = entry.value;
+            return Container(
+              margin: EdgeInsets.only(
+                  bottom: index == _downlineMembers.length - 1 ? 0 : 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: primaryGold.withOpacity(0.18),
+                    child: Icon(Icons.person, color: primaryGold, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          member['name']!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tham gia: ${member['joined']}',
+                          style:
+                              GoogleFonts.inter(fontSize: 12, color: textGray),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          member['status']!,
+                          style:
+                              GoogleFonts.inter(fontSize: 12, color: textGray),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    member['revenue']!,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: primaryGold,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
@@ -741,15 +864,10 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: primaryGold,
-          ),
-          const SizedBox(height: 16),
           Text(
-            'Rút tiền',
+            'Rút hoa hồng',
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -774,8 +892,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 32),
-          // Withdraw button
+          const SizedBox(height: 18),
           GestureDetector(
             onTap: () {
               _showWithdrawDialog();
@@ -811,7 +928,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -846,6 +963,81 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Lịch sử rút hoa hồng',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ..._withdrawRecords.map((record) {
+            final statusColor =
+                record['status'] == 'Hoàn tất' ? Colors.green : Colors.orange;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.account_balance,
+                        color: statusColor, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          record['amount']!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${record['date']} • ${record['bank']}',
+                          style:
+                              GoogleFonts.inter(fontSize: 12, color: textGray),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      record['status']!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
@@ -869,13 +1061,8 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.history,
-            size: 64,
-            color: Colors.grey[700],
-          ),
-          const SizedBox(height: 16),
           Text(
             'Lịch sử giao dịch',
             style: GoogleFonts.inter(
@@ -884,15 +1071,73 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               color: textDark,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Xem toàn bộ lịch sử affiliate và rút tiền',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 10),
+          ..._historyRecords.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isPositive = item['amount']!.startsWith('+');
+            return Container(
+              margin: EdgeInsets.only(
+                  bottom: index == _historyRecords.length - 1 ? 0 : 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? Colors.green.withOpacity(0.12)
+                          : Colors.orange.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      isPositive ? Icons.arrow_downward : Icons.arrow_upward,
+                      color: isPositive ? Colors.green : Colors.orange,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${item['id']} • ${item['time']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item['event']!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    item['amount']!,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isPositive ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
@@ -956,9 +1201,9 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Policy Link
           GestureDetector(
             onTap: () {
@@ -985,7 +1230,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1014,11 +1259,31 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
             const SizedBox(height: 20),
             ..._periods.map((period) {
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  if (period == 'Tùy chỉnh ngày') {
+                    final range = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(DateTime.now().year - 1),
+                      lastDate: DateTime.now(),
+                      initialDateRange: DateTimeRange(
+                        start: DateTime.now().subtract(const Duration(days: 7)),
+                        end: DateTime.now(),
+                      ),
+                    );
+                    if (range == null) return;
+                    if (!mounted) return;
+                    setState(() {
+                      _selectedPeriod =
+                          '${range.start.day.toString().padLeft(2, '0')}/${range.start.month.toString().padLeft(2, '0')} - ${range.end.day.toString().padLeft(2, '0')}/${range.end.month.toString().padLeft(2, '0')}';
+                    });
+                    Navigator.pop(sheetContext);
+                    return;
+                  }
+
                   setState(() {
                     _selectedPeriod = period;
                   });
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                 },
                 child: Container(
                   width: double.infinity,
@@ -1041,8 +1306,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color:
-                          _selectedPeriod == period ? primaryGold : textDark,
+                      color: _selectedPeriod == period ? primaryGold : textDark,
                     ),
                   ),
                 ),

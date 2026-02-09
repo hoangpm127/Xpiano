@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'upload_video_screen.dart';
+import 'video_player_detail_screen.dart';
 
 class TeacherPublicProfileScreen extends StatefulWidget {
   final String? teacherName;
@@ -34,12 +36,12 @@ class _TeacherPublicProfileScreenState
   final String _likes = '128K';
   final String _followers = '2.4K';
   final String _bio =
-      'Chia se hanh trinh hoc piano tu so 0.\nBeginner | Luyen ngon | Cover';
+      'Chia sẻ hành trình học piano từ số 0.\nBeginner | Luyện ngón | Cover';
 
   final List<VideoItem> _videos = [
     VideoItem(
       thumbnail: 'https://picsum.photos/400/600?random=1',
-      title: 'Luyen ngon 5 phut',
+      title: 'Luyện ngón 5 phút',
       duration: '0:32',
     ),
     VideoItem(
@@ -49,22 +51,22 @@ class _TeacherPublicProfileScreenState
     ),
     VideoItem(
       thumbnail: 'https://picsum.photos/400/600?random=3',
-      title: 'Bai 1 cho nguoi moi',
+      title: 'Bài 1 cho người mới',
       duration: '10:00',
     ),
     VideoItem(
       thumbnail: 'https://picsum.photos/400/600?random=4',
-      title: '88 phim vs 61 phim',
+      title: '88 phím vs 61 phím',
       duration: '0:32',
     ),
     VideoItem(
       thumbnail: 'https://picsum.photos/400/600?random=5',
-      title: 'Ky thuat pedal co ban',
+      title: 'Kỹ thuật pedal cơ bản',
       duration: '2:45',
     ),
     VideoItem(
       thumbnail: 'https://picsum.photos/400/600?random=6',
-      title: 'Choi hop am dau tien',
+      title: 'Chơi hợp âm đầu tiên',
       duration: '3:20',
     ),
   ];
@@ -77,7 +79,7 @@ class _TeacherPublicProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    final displayName = widget.teacherName ?? 'Linh Nguyen';
+    final displayName = widget.teacherName ?? 'Linh Nguyễn';
     final displayAvatar = widget.teacherAvatar;
 
     return Scaffold(
@@ -216,7 +218,7 @@ class _TeacherPublicProfileScreenState
                 const Icon(Icons.verified, color: primaryGold, size: 16),
                 const SizedBox(width: 6),
                 Text(
-                  'Giao vien da xac thuc',
+                  'Giáo viên đã xác thực',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -244,7 +246,7 @@ class _TeacherPublicProfileScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildStatItem(_likes, 'luot thich'),
+              _buildStatItem(_likes, 'lượt thích'),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 width: 4,
@@ -254,7 +256,7 @@ class _TeacherPublicProfileScreenState
                   shape: BoxShape.circle,
                 ),
               ),
-              _buildStatItem(_followers, 'nguoi theo doi'),
+              _buildStatItem(_followers, 'người theo dõi'),
             ],
           ).animate().fadeIn(delay: 400.ms),
         ],
@@ -301,9 +303,9 @@ class _TeacherPublicProfileScreenState
         children: [
           _buildTab('Video', 0),
           const SizedBox(width: 12),
-          _buildTab('Bo suu tap', 1),
+          _buildTab('Bộ sưu tập', 1),
           const SizedBox(width: 12),
-          _buildTab('Hieu qua', 2),
+          _buildTab('Hiệu quả', 2),
         ],
       ),
     );
@@ -358,9 +360,9 @@ class _TeacherPublicProfileScreenState
       return _buildVideoGrid();
     }
     if (_selectedTabIndex == 1) {
-      return _buildEmptyState('Chua co bo suu tap nao');
+      return _buildEmptyState('Chưa có bộ sưu tập nào');
     }
-    return _buildEmptyState('Du lieu hieu qua dang duoc cap nhat');
+    return _buildEmptyState('Dữ liệu hiệu quả đang được cập nhật');
   }
 
   Widget _buildVideoGrid() {
@@ -386,8 +388,16 @@ class _TeacherPublicProfileScreenState
   Widget _buildVideoCard(VideoItem video, int index) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Phat video: ${video.title}')),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoPlayerDetailScreen(
+              videoTitle: video.title,
+              duration: video.duration,
+              thumbnail: video.thumbnail,
+              author: widget.teacherName ?? 'Giáo viên',
+            ),
+          ),
         );
       },
       child: Column(
@@ -536,7 +546,7 @@ class _TeacherPublicProfileScreenState
             const Icon(Icons.add, color: Colors.black, size: 24),
             const SizedBox(width: 10),
             Text(
-              'Tao video moi',
+              'Tạo video mới',
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -576,7 +586,7 @@ class _TeacherPublicProfileScreenState
             ),
             const SizedBox(height: 24),
             Text(
-              'Tao video moi',
+              'Tạo video mới',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -586,30 +596,35 @@ class _TeacherPublicProfileScreenState
             const SizedBox(height: 24),
             _buildCreateOption(
               icon: Icons.videocam,
-              title: 'Quay video moi',
-              subtitle: 'Su dung camera de quay video',
+              title: 'Quay video mới',
+              subtitle: 'Sử dụng camera để quay video',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Mo camera...')),
-                );
+                _openUploadVideo();
               },
             ),
             const SizedBox(height: 12),
             _buildCreateOption(
               icon: Icons.photo_library,
-              title: 'Chon tu thu vien',
-              subtitle: 'Tai video co san len',
+              title: 'Chọn từ thư viện',
+              subtitle: 'Tải video có sẵn lên',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Mo thu vien...')),
-                );
+                _openUploadVideo();
               },
             ),
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openUploadVideo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UploadVideoScreen(videoPath: null),
       ),
     );
   }

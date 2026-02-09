@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -24,6 +26,9 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isRecording = false;
+  Duration _recordingDuration = Duration.zero;
+  Timer? _recordingTimer;
 
   // Light Mode Palette
   static const Color primaryGold = Color(0xFFD4AF37);
@@ -33,7 +38,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   static const Color borderLight = Color(0xFFE6E6E6);
   static const Color textDark = Color(0xFF1A1A1A);
   static const Color textMuted = Color(0xFF6B6B6B);
-  
+
   // Mock messages
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -65,6 +70,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -79,25 +85,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           children: [
             // TOP BAR
             _buildTopBar(),
-            
+
             // NEXT LESSON REMINDER
             _buildNextLessonReminder(),
-            
+
             // MESSAGES
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
                   return _buildMessageBubble(_messages[index], index);
                 },
               ),
             ),
-            
+
             // QUICK ACTIONS
-            _buildQuickActionsRow(),
-            
+            if (!_isRecording) _buildQuickActionsRow(),
+
+            // RECORDING STATE
+            if (_isRecording) _buildRecordingPanel(),
+
             // INPUT FIELD
             _buildInputField(),
           ],
@@ -181,7 +191,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD4AF37).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -281,9 +292,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: message.isTeacher 
-            ? MainAxisAlignment.end 
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            message.isTeacher ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!message.isTeacher) ...[
@@ -309,11 +319,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: message.isTeacher 
-                    ? const Radius.circular(16) 
+                bottomLeft: message.isTeacher
+                    ? const Radius.circular(16)
                     : const Radius.circular(4),
-                bottomRight: message.isTeacher 
-                    ? const Radius.circular(4) 
+                bottomRight: message.isTeacher
+                    ? const Radius.circular(4)
                     : const Radius.circular(16),
               ),
               border: Border.all(
@@ -335,12 +345,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     message.text,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: message.isTeacher ? const Color(0xFF3B2A00) : textDark,
+                      color: message.isTeacher
+                          ? const Color(0xFF3B2A00)
+                          : textDark,
                       height: 1.4,
                     ),
                   )
                 else if (message.type == MessageType.audio)
-                  _buildAudioMessage(message),
+                  _buildAudioMessage(message)
+                else if (message.type == MessageType.file)
+                  _buildFileMessage(message),
                 const SizedBox(height: 4),
                 Text(
                   message.time,
@@ -399,6 +413,99 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileMessage(ChatMessage message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4AF37).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.insert_drive_file,
+                color: Color(0xFFD4AF37), size: 18),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              message.text,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordingPanel() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: cardLight,
+        border: Border(
+          top: BorderSide(color: borderLight),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFE4E6),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.mic, color: Colors.redAccent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đang ghi âm ${_formatDuration(_recordingDuration)}',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 18,
+                  child: CustomPaint(
+                    painter: WaveformPainter(color: const Color(0xFFD4AF37)),
+                    size: const Size(double.infinity, 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          TextButton(
+            onPressed: _cancelVoiceRecording,
+            child: Text(
+              'Hủy',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                color: Colors.redAccent,
+              ),
             ),
           ),
         ],
@@ -512,11 +619,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.2, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 300.ms, duration: 400.ms)
+        .slideY(begin: 0.2, end: 0);
   }
 
   // INPUT FIELD
   Widget _buildInputField() {
+    final hasText = _messageController.text.trim().isNotEmpty;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -569,93 +680,334 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
               maxLines: null,
               textInputAction: TextInputAction.send,
+              onChanged: (_) => setState(() {}),
               onSubmitted: (value) => _sendMessage(),
             ),
           ),
           const SizedBox(width: 12),
           // Voice/Send Button
           GestureDetector(
-            onTap: _messageController.text.isNotEmpty 
-                ? _sendMessage 
-                : _recordVoice,
+            onTap: hasText ? _sendMessage : _recordVoice,
+            onLongPressStart: hasText ? null : (_) => _startVoiceRecording(),
+            onLongPressEnd:
+                hasText ? null : (_) => _stopVoiceRecording(send: true),
+            onLongPressCancel: hasText ? null : _cancelVoiceRecording,
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFD4AF37), Color(0xFFB8941F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: hasText
+                    ? const LinearGradient(
+                        colors: [Color(0xFFD4AF37), Color(0xFFB8941F)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: !hasText && _isRecording
+                    ? const Color(0xFFFFE4E6)
+                    : (!hasText ? const Color(0xFFD4AF37) : null),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                _messageController.text.isNotEmpty 
-                    ? Icons.send 
-                    : Icons.mic,
-                color: Colors.black,
+                hasText ? Icons.send : Icons.mic,
+                color: _isRecording ? Colors.redAccent : Colors.black,
                 size: 20,
               ),
             ),
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 400.ms, duration: 400.ms).slideY(begin: 0.2, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 400.ms, duration: 400.ms)
+        .slideY(begin: 0.2, end: 0);
   }
 
   // HELPER METHODS
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
-    
+
+    final text = _messageController.text.trim();
     setState(() {
       _messages.add(ChatMessage(
-        text: _messageController.text,
+        text: text,
         isTeacher: true,
-        time: '${DateTime.now().hour}:${DateTime.now().minute}',
+        time: _nowLabel(),
         type: MessageType.text,
       ));
+      _messageController.clear();
     });
-    
-    _messageController.clear();
     _scrollToBottom();
   }
 
   void _sendFile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Chọn file để gửi',
-          style: GoogleFonts.inter(color: textDark),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: borderLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Gửi file',
+              style: GoogleFonts.inter(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildMenuOption(
+              Icons.photo_library_outlined,
+              'Thư viện ảnh/video',
+              () => _attachPickedItem('Video bài tập từ thư viện'),
+            ),
+            _buildMenuOption(
+              Icons.description_outlined,
+              'Tài liệu',
+              () => _attachPickedItem('Tài liệu bài học (.pdf)'),
+            ),
+            _buildMenuOption(
+              Icons.camera_alt_outlined,
+              'Chụp ảnh nhanh',
+              () => _attachPickedItem('Ảnh từ camera'),
+            ),
+            _buildMenuOption(
+              Icons.audiotrack_outlined,
+              'Tệp âm thanh',
+              () => _attachPickedItem('Bản thu âm hướng dẫn'),
+            ),
+          ],
         ),
-        backgroundColor: cardLight,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  void _scheduleLesson() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Tính năng đặt lịch đang được phát triển',
-          style: GoogleFonts.inter(color: textDark),
+  void _attachPickedItem(String fileLabel) {
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: fileLabel,
+          isTeacher: true,
+          time: _nowLabel(),
+          type: MessageType.file,
         ),
-        backgroundColor: cardLight,
-        behavior: SnackBarBehavior.floating,
+      );
+    });
+    _scrollToBottom();
+  }
+
+  void _scheduleLesson() {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 19, minute: 30);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Chốt lịch nhanh',
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading:
+                    const Icon(Icons.calendar_today, color: Color(0xFFD4AF37)),
+                title: Text(
+                  'Ngày học',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600, color: textDark),
+                ),
+                subtitle: Text(
+                  '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                  style: GoogleFonts.inter(color: textMuted),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: textMuted),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setSheetState(() => selectedDate = picked);
+                  }
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.schedule, color: Color(0xFFD4AF37)),
+                title: Text(
+                  'Giờ học',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600, color: textDark),
+                ),
+                subtitle: Text(
+                  '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                  style: GoogleFonts.inter(color: textMuted),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: textMuted),
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: selectedTime,
+                  );
+                  if (picked != null) {
+                    setSheetState(() => selectedTime = picked);
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final timeLabel =
+                        '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')} • ${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+                    Navigator.pop(sheetContext);
+                    setState(() {
+                      _messages.add(
+                        ChatMessage(
+                          text: 'Đã chốt lịch buổi học: $timeLabel',
+                          isTeacher: true,
+                          time: _nowLabel(),
+                          type: MessageType.text,
+                        ),
+                      );
+                    });
+                    _scrollToBottom();
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: Text(
+                    'Xác nhận lịch',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   void _recordVoice() {
+    if (_isRecording) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Bắt đầu ghi âm',
+          'Giữ nút mic để ghi âm, thả tay để gửi.',
           style: GoogleFonts.inter(color: textDark),
         ),
         backgroundColor: cardLight,
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  void _startVoiceRecording() {
+    if (_isRecording) return;
+    setState(() {
+      _isRecording = true;
+      _recordingDuration = Duration.zero;
+    });
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_isRecording) return;
+      setState(() => _recordingDuration += const Duration(seconds: 1));
+    });
+  }
+
+  void _stopVoiceRecording({bool send = false}) {
+    if (!_isRecording) return;
+    final duration = _recordingDuration;
+    _recordingTimer?.cancel();
+    setState(() {
+      _isRecording = false;
+      _recordingDuration = Duration.zero;
+    });
+    if (send && duration.inSeconds > 0) {
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            text: '',
+            isTeacher: true,
+            time: _nowLabel(),
+            type: MessageType.audio,
+            duration: _formatDuration(duration),
+          ),
+        );
+      });
+      _scrollToBottom();
+    }
+  }
+
+  void _cancelVoiceRecording() {
+    if (!_isRecording) return;
+    _recordingTimer?.cancel();
+    setState(() {
+      _isRecording = false;
+      _recordingDuration = Duration.zero;
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.toString().padLeft(1, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  String _nowLabel() {
+    final now = DateTime.now();
+    final hour = now.hour.toString().padLeft(2, '0');
+    final minute = now.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   void _editNextLesson() {
@@ -709,7 +1061,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildMenuOption(IconData icon, String label, VoidCallback onTap, {bool isDestructive = false}) {
+  Widget _buildMenuOption(IconData icon, String label, VoidCallback onTap,
+      {bool isDestructive = false}) {
     return ListTile(
       leading: Icon(
         icon,
@@ -760,7 +1113,8 @@ class WaveformPainter extends CustomPainter {
 
     for (int i = 0; i < barCount; i++) {
       final x = i * barWidth + barWidth / 2;
-      final height = (i % 3 == 0 ? 0.7 : (i % 2 == 0 ? 0.5 : 0.3)) * size.height;
+      final height =
+          (i % 3 == 0 ? 0.7 : (i % 2 == 0 ? 0.5 : 0.3)) * size.height;
       final y1 = (size.height - height) / 2;
       final y2 = y1 + height;
 
@@ -790,5 +1144,3 @@ class ChatMessage {
     this.duration,
   });
 }
-
-

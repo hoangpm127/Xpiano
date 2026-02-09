@@ -22,7 +22,8 @@ class StudentDetailScreen extends StatefulWidget {
   State<StudentDetailScreen> createState() => _StudentDetailScreenState();
 }
 
-class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTickerProviderStateMixin {
+class _StudentDetailScreenState extends State<StudentDetailScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   // Light Mode Palette
@@ -33,14 +34,14 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   static const Color borderLight = Color(0xFFE6E6E6);
   static const Color textDark = Color(0xFF1A1A1A);
   static const Color textMuted = Color(0xFF6B6B6B);
-  
+
   // Mock data
   final int _recentScore = 92;
   final int _streakDays = 12;
   final double _weekProgress = 0.70;
   final String _currentPiece = 'Canon in D — đoạn 1';
   final String _goal = 'Chơi 1 bài trong 30 ngày';
-  
+
   final List<TeacherNote> _teacherNotes = [
     TeacherNote(
       date: '5/02/2026',
@@ -56,6 +57,32 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     ),
   ];
 
+  final List<LessonHistoryItem> _lessonHistory = [
+    LessonHistoryItem(
+      date: '07/02/2026',
+      time: '19:30 - 20:30',
+      mode: 'Online 1-1',
+      topic: 'Luyện nhịp tay trái + đọc nốt',
+      result: 'Hoàn thành tốt',
+      score: 92,
+    ),
+    LessonHistoryItem(
+      date: '03/02/2026',
+      time: '19:30 - 20:30',
+      mode: 'Offline',
+      topic: 'Canon in D - đoạn 1',
+      result: 'Cần tập thêm pedal',
+      score: 86,
+    ),
+    LessonHistoryItem(
+      date: '31/01/2026',
+      time: '20:00 - 21:00',
+      mode: 'Online 1-1',
+      topic: 'Bài tập ngón Hanon 1-3',
+      result: 'Tiến bộ rõ',
+      score: 90,
+    ),
+  ];
   @override
   void initState() {
     super.initState();
@@ -77,7 +104,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           children: [
             // 1. STICKY HEADER
             _buildHeader(),
-            
+
             // 2. SCROLLABLE CONTENT
             Expanded(
               child: SingleChildScrollView(
@@ -98,7 +125,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 ),
               ),
             ),
-            
+
             // 3. STICKY FOOTER
             _buildFooterActions(),
           ],
@@ -229,7 +256,8 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                 const SizedBox(height: 8),
                 // Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD4AF37),
                     borderRadius: BorderRadius.circular(20),
@@ -264,7 +292,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 100.ms, duration: 500.ms).slideX(begin: -0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 100.ms, duration: 500.ms)
+        .slideX(begin: -0.1, end: 0);
   }
 
   // 3. GOAL CARD
@@ -333,7 +364,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ],
         ),
       ),
-    ).animate().fadeIn(delay: 200.ms, duration: 500.ms).scale(begin: const Offset(0.95, 0.95));
+    )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 500.ms)
+        .scale(begin: const Offset(0.95, 0.95));
   }
 
   // 4. QUICK STATS ROW
@@ -424,7 +458,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
         ],
       ),
-    ).animate().fadeIn(delay: delay.ms, duration: 500.ms).slideY(begin: 0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: delay.ms, duration: 500.ms)
+        .slideY(begin: 0.1, end: 0);
   }
 
   // 5. TAB NAVIGATION
@@ -441,8 +478,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
         indicatorWeight: 3,
         labelColor: const Color(0xFFD4AF37),
         unselectedLabelColor: textMuted,
-        labelStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.normal),
+        labelStyle:
+            GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.normal),
         tabs: const [
           Tab(text: 'Tiến độ'),
           Tab(text: 'Lịch sử'),
@@ -456,7 +495,19 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   Widget _buildTabContent() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: _buildProgressTab(),
+      child: AnimatedBuilder(
+        animation: _tabController,
+        builder: (context, _) {
+          switch (_tabController.index) {
+            case 1:
+              return _buildLessonHistoryTab();
+            case 2:
+              return _buildNotesTab();
+            default:
+              return _buildProgressTab();
+          }
+        },
+      ),
     );
   }
 
@@ -472,6 +523,179 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
         const SizedBox(height: 24),
         // Teacher Notes Section
         _buildTeacherNotes(),
+      ],
+    );
+  }
+
+  Widget _buildLessonHistoryTab() {
+    return Column(
+      children: _lessonHistory.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        return Container(
+          margin: EdgeInsets.only(
+              bottom: index == _lessonHistory.length - 1 ? 0 : 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFD4AF37).withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.date,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37).withOpacity(0.4),
+                      ),
+                    ),
+                    child: Text(
+                      'Điểm ${item.score}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFB39129),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.topic,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.schedule,
+                      size: 15, color: Color(0xFFD4AF37)),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.time,
+                    style: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.videocam_outlined,
+                      size: 15, color: Color(0xFFD4AF37)),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.mode,
+                    style: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.result,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textDark,
+                ),
+              ),
+            ],
+          ),
+        ).animate().fadeIn(delay: (100 + index * 70).ms).slideY(
+              begin: 0.12,
+              duration: 300.ms,
+            );
+      }).toList(),
+    );
+  }
+
+  Widget _buildNotesTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Ghi chú riêng tư',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _showAddNoteDialog,
+              icon: const Icon(Icons.add, size: 16),
+              label: Text(
+                'Thêm',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: Colors.black,
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ..._teacherNotes.asMap().entries.map((entry) {
+          final index = entry.key;
+          final note = entry.value;
+          return Container(
+            margin: EdgeInsets.only(
+                bottom: index == _teacherNotes.length - 1 ? 0 : 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cardLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.date,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textMuted,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  note.content,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: textDark,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fadeIn(delay: (80 + index * 70).ms);
+        }),
       ],
     );
   }
@@ -518,12 +742,16 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
               value: _weekProgress,
               minHeight: 12,
               backgroundColor: cardAlt,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
             ),
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 600.ms, duration: 500.ms).slideX(begin: 0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 600.ms, duration: 500.ms)
+        .slideX(begin: 0.1, end: 0);
   }
 
   Widget _buildCurrentPiece() {
@@ -576,7 +804,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 700.ms, duration: 500.ms).slideX(begin: -0.1, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 700.ms, duration: 500.ms)
+        .slideX(begin: -0.1, end: 0);
   }
 
   Widget _buildTeacherNotes() {
@@ -669,7 +900,9 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
                     ),
                   ],
                 ),
-              ).animate().fadeIn(delay: (800 + index * 100).ms, duration: 500.ms);
+              )
+                  .animate()
+                  .fadeIn(delay: (800 + index * 100).ms, duration: 500.ms);
             },
           ),
         ),
@@ -791,7 +1024,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 900.ms, duration: 400.ms).slideY(begin: 0.2, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 900.ms, duration: 400.ms)
+        .slideY(begin: 0.2, end: 0);
   }
 
   // HELPER METHODS
@@ -824,7 +1060,8 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
     );
   }
 
-  Widget _buildMenuOption(IconData icon, String label, VoidCallback onTap, {bool isDestructive = false}) {
+  Widget _buildMenuOption(IconData icon, String label, VoidCallback onTap,
+      {bool isDestructive = false}) {
     return ListTile(
       leading: Icon(
         icon,
@@ -845,6 +1082,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   }
 
   void _showAddNoteDialog() {
+    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -857,6 +1095,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
         ),
         content: TextField(
+          controller: controller,
           maxLines: 4,
           style: GoogleFonts.inter(color: textDark),
           decoration: InputDecoration(
@@ -880,6 +1119,21 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           ),
           ElevatedButton(
             onPressed: () {
+              final newNote = controller.text.trim();
+              if (newNote.isEmpty) {
+                Navigator.pop(context);
+                return;
+              }
+              setState(() {
+                _teacherNotes.insert(
+                  0,
+                  TeacherNote(
+                    date:
+                        '${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}',
+                    content: newNote,
+                  ),
+                );
+              });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -908,6 +1162,24 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
 }
 
 // Model
+class LessonHistoryItem {
+  final String date;
+  final String time;
+  final String mode;
+  final String topic;
+  final String result;
+  final int score;
+
+  LessonHistoryItem({
+    required this.date,
+    required this.time,
+    required this.mode,
+    required this.topic,
+    required this.result,
+    required this.score,
+  });
+}
+
 class TeacherNote {
   final String date;
   final String content;
@@ -917,7 +1189,3 @@ class TeacherNote {
     required this.content,
   });
 }
-
-
-
-
