@@ -200,9 +200,9 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
     final approvedCount = _teachers.where((t) => t['verification_status'] == 'approved').length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: Colors.white,
         title: Text(
           'Admin Debug',
           style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),

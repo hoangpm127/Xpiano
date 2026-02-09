@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'student_detail_screen.dart';
 import 'create_homework_screen.dart';
+import 'messages_screen.dart';
+import 'chat_detail_screen.dart';
 
 class StudentManagementScreen extends StatefulWidget {
   const StudentManagementScreen({super.key});
@@ -73,7 +75,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -162,7 +164,18 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
               const SizedBox(width: 8),
               _buildHeaderIcon(Icons.filter_list, () {}),
               const SizedBox(width: 8),
-              _buildHeaderIcon(Icons.chat_bubble_outline, () {}, badge: 3),
+              _buildHeaderIcon(
+                Icons.chat_bubble_outline,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MessagesScreen(),
+                    ),
+                  );
+                },
+                badge: 3,
+              ),
             ],
           ),
         ],
@@ -463,6 +476,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                         studentName: student.name,
                         studentAvatar: student.avatar,
                         level: student.level,
+                        nextLesson: student.nextSession,
                       ),
                       transitionsBuilder: (context, animation, secondaryAnimation, child) {
                         const begin = Offset(1.0, 0.0);
@@ -647,13 +661,15 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Mở chat với ${student.name}',
-                          style: GoogleFonts.inter(color: Colors.white),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          studentName: student.name,
+                          studentAvatar: student.avatar,
+                          level: student.level,
+                          nextLesson: student.nextSession,
                         ),
-                        backgroundColor: const Color(0xFF1E1E1E),
                       ),
                     );
                   },
@@ -713,6 +729,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> with 
                         studentName: student.name,
                         studentAvatar: student.avatar,
                         level: student.level,
+                        nextLesson: student.nextSession,
                       ),
                       transitionsBuilder: (context, animation, secondaryAnimation, child) {
                         const begin = Offset(1.0, 0.0);

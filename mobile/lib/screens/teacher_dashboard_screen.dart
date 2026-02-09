@@ -6,6 +6,11 @@ import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'teacher_schedule_screen.dart';
 import 'student_management_screen.dart';
+import 'messages_screen.dart';
+import 'teacher_wallet_screen.dart';
+import 'teacher_reviews_screen.dart';
+import 'teacher_public_profile_screen.dart';
+import 'affiliate_dashboard_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -67,7 +72,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Colors.white,
         body: const Center(
           child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
         ),
@@ -75,13 +80,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -143,6 +148,33 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ),
         ),
         const SizedBox(width: 12),
+        // Affiliate Button
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AffiliateDashboardScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withOpacity(0.2),
+              ),
+            ),
+            child: const Icon(
+              Icons.attach_money,
+              color: Color(0xFFD4AF37),
+              size: 24,
+            ),
+          ),
+        ).animate().fadeIn(delay: 300.ms).scale(begin: const Offset(0.8, 0.8)),
+        const SizedBox(width: 8),
         // Notification Bell
         Stack(
           children: [
@@ -174,8 +206,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               ),
             ),
           ],
-        ).animate().fadeIn(delay: 300.ms).scale(begin: const Offset(0.8, 0.8)),
-        const SizedBox(width: 12),
+        ).animate().fadeIn(delay: 350.ms).scale(begin: const Offset(0.8, 0.8)),
+        const SizedBox(width: 8),
         // Logout Button
         GestureDetector(
           onTap: _handleLogout,
@@ -197,23 +229,36 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         ).animate().fadeIn(delay: 350.ms).scale(begin: const Offset(0.8, 0.8)),
         const SizedBox(width: 12),
         // Avatar
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFD4AF37).withOpacity(0.5),
-              width: 2,
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TeacherPublicProfileScreen(
+                  teacherName: _teacherName,
+                  teacherAvatar: _avatarUrl,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withOpacity(0.5),
+                width: 2,
+              ),
+              image: DecorationImage(
+                image: _avatarUrl != null
+                    ? NetworkImage(_avatarUrl!)
+                    : const NetworkImage('https://i.pravatar.cc/150?img=33'),
+                fit: BoxFit.cover,
+              ),
             ),
-            image: DecorationImage(
-              image: _avatarUrl != null
-                  ? NetworkImage(_avatarUrl!)
-                  : const NetworkImage('https://i.pravatar.cc/150?img=33'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.8, 0.8)),
+          ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.8, 0.8)),
+        ),
       ],
     );
   }
@@ -229,7 +274,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               setState(() => _isOnline = !_isOnline);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(24),
@@ -240,22 +285,27 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 7,
+                    height: 7,
                     decoration: BoxDecoration(
                       color: _isOnline ? Colors.green : Colors.grey,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isOnline ? 'Online: Bật' : 'Online: Tắt',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      _isOnline ? 'Online: Bật' : 'Online: Tắt',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
                 ],
@@ -263,11 +313,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
           ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.2),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         // Toggle 2: Sessions This Week
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF1E1E1E),
               borderRadius: BorderRadius.circular(24),
@@ -277,19 +327,24 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.calendar_today,
                   color: Color(0xFFD4AF37),
-                  size: 16,
+                  size: 14,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tuần này: $_weekSessions buổi',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Tuần: $_weekSessions buổi',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],
@@ -304,7 +359,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget _buildStatistics() {
     return Row(
       children: [
-        // Card 1: Income
+        // Card 1: Income (Tappable)
         Expanded(
           child: _buildStatCard(
             label: 'Thu nhập tháng',
@@ -312,10 +367,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             valueColor: const Color(0xFFD4AF37),
             subtitle: '',
             delay: 100,
+            showArrow: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TeacherWalletScreen(),
+                ),
+              );
+            },
           ),
         ),
-        const SizedBox(width: 12),
-        // Card 2: Rating
+        const SizedBox(width: 10),
+        // Card 2: Rating (Tappable)
         Expanded(
           child: _buildStatCard(
             label: 'Đánh giá',
@@ -323,9 +387,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             valueColor: Colors.white,
             subtitle: '($_ratingCount)',
             delay: 200,
+            showArrow: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TeacherReviewsScreen(),
+                ),
+              );
+            },
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         // Card 3: Students - Tappable
         Expanded(
           child: GestureDetector(
@@ -358,9 +431,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     required String subtitle,
     required int delay,
     bool showArrow = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+    final cardContent = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
@@ -370,36 +444,43 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
+              Expanded(
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: Colors.grey[400],
+                    fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
               ),
               if (showArrow)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 12,
-                  color: const Color(0xFFD4AF37).withOpacity(0.6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 10,
+                    color: const Color(0xFFD4AF37).withOpacity(0.6),
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             value,
             style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
               color: valueColor,
+              letterSpacing: -0.5,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
@@ -409,8 +490,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             Text(
               subtitle,
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: 10,
                 color: Colors.grey[500],
+                fontWeight: FontWeight.w400,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -418,7 +500,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ],
         ],
       ),
-    ).animate().fadeIn(delay: delay.ms).scale(begin: const Offset(0.9, 0.9));
+    );
+    
+    final animatedCard = cardContent.animate().fadeIn(delay: delay.ms).scale(begin: const Offset(0.9, 0.9));
+    
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: animatedCard,
+      );
+    }
+    
+    return animatedCard;
   }
 
   // 4. ACTION SECTION
@@ -1176,15 +1269,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
           );
         } else if (index == 2) {
-          // Messages - Coming soon
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Tính năng Tin nhắn đang được phát triển',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              backgroundColor: const Color(0xFF1E1E1E),
-              behavior: SnackBarBehavior.floating,
+          // Navigate to Messages
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MessagesScreen(),
             ),
           );
         } else if (index == 3) {

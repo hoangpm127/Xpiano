@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'create_homework_screen.dart';
+import 'chat_detail_screen.dart';
 
 class StudentDetailScreen extends StatefulWidget {
   final String studentName;
   final String studentAvatar;
   final String level;
+  final String nextLesson;
 
   const StudentDetailScreen({
     super.key,
     required this.studentName,
     required this.studentAvatar,
     required this.level,
+    required this.nextLesson,
   });
 
   @override
@@ -59,7 +62,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -691,14 +694,15 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> with SingleTi
           Expanded(
             child: OutlinedButton(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Tính năng Nhắn tin đang được phát triển',
-                      style: GoogleFonts.inter(color: Colors.white),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatDetailScreen(
+                      studentName: widget.studentName,
+                      studentAvatar: widget.studentAvatar,
+                      level: widget.level,
+                      nextLesson: widget.nextLesson,
                     ),
-                    backgroundColor: const Color(0xFF1E1E1E),
-                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               },

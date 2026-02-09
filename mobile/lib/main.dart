@@ -6,7 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/supabase_service.dart';
 import 'models/feed_item.dart';
 import 'screens/booking_screen.dart';
+import 'screens/create_video_screen.dart';
+import 'screens/messages_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/piano_rental_screen.dart';
+import 'screens/piano_detail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
@@ -126,7 +130,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: backgroundLight,
       body: Stack(
         children: [
           IndexedStack(
@@ -151,14 +155,14 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 },
               ),
               
-              // 1: Search
-              const Center(child: Text("Khám phá", style: TextStyle(color: Colors.white))),
+              // 1: Search - Piano Rental
+              const PianoRentalScreen(),
               
-              // 2: Add
-              const Center(child: Text("Tạo mới", style: TextStyle(color: Colors.white))),
+              // 2: Add - Create Video
+              const CreateVideoScreen(),
 
               // 3: Message
-              const Center(child: Text("Hộp thư", style: TextStyle(color: Colors.white))),
+              const MessagesScreen(),
 
               // 4: Profile
               const ProfileScreen(),
@@ -192,7 +196,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   // End of Feed Page
   Widget _buildEndOfFeedPage() {
     return Container(
-      color: Colors.black,
+      color: backgroundLight,
       child: Stack(
         children: [
           Center(
@@ -210,7 +214,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -218,7 +222,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                   'Đã xem tất cả bài viết mới',
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: Colors.white70,
+                    color: Colors.black54,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -701,8 +705,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
               padding: const EdgeInsets.only(right: 64),
               child: Row(
                 children: [
-                  // Borrow Piano Button
-                  Expanded(
+                  // Borrow Piano Button - Only show if video has pianoId
+                  if (item.pianoId != null && item.pianoId!.isNotEmpty)
+                    Expanded(
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
@@ -725,10 +730,38 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
                           onTap: () => _checkLogin(() {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const BookingScreen()),
-                            );
+                            // If video has piano_id, navigate to that specific piano
+                            if (item.pianoId != null && item.pianoId!.isNotEmpty) {
+                              // Mock piano data for the specific piano
+                              final pianoData = {
+                                'id': item.pianoId,
+                                'name': 'Yamaha C3X Grand Piano',
+                                'category': 'Grand Piano',
+                                'price': '500,000đ/giờ',
+                                'location': item.location ?? 'TP.HCM',
+                                'rating': 4.9,
+                                'reviews': 128,
+                                'image': item.mediaUrl,
+                                'available': true,
+                                'features': ['Âm thanh đỉnh cao', 'Phòng cách âm', 'Điều hòa'],
+                              };
+                              
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PianoDetailScreen(
+                                    pianoId: item.pianoId!,
+                                    pianoData: pianoData,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              // If no piano_id, navigate to general booking screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const BookingScreen()),
+                              );
+                            }
                           }),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -753,7 +786,11 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  
+                  // Add spacing only if piano button is shown
+                  if (item.pianoId != null && item.pianoId!.isNotEmpty)
+                    const SizedBox(width: 12),
+                  
                   // Learn Now Button
                   Expanded(
                     child: Container(
@@ -816,7 +853,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
 
   // Custom Bottom Navigation
   Widget _buildBottomNavigation(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Always use light mode for internal screens
+    const isDark = false;
     
     return Positioned(
       bottom: 0,
@@ -831,9 +869,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
           ),
           border: Border(
             top: BorderSide(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.05) 
-                  : const Color(0xFFF5F5F5),
+              color: Colors.grey[200]!,
               width: 1,
             ),
           ),
@@ -943,7 +979,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   }) {
     final color = isActive 
         ? primaryGold 
-        : (isDark ? const Color(0xFF808080) : const Color(0xFF9E9E9E));
+        : const Color(0xFF9E9E9E); // Light gray for inactive
     
     return GestureDetector(
       onTap: onTap,

@@ -8,7 +8,7 @@ class TeacherOnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Hồ sơ Giáo viên', style: GoogleFonts.inter(color: Colors.white)),
         backgroundColor: Colors.transparent,

@@ -82,7 +82,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           'Mượn Đàn',

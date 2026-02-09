@@ -122,7 +122,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           // 1. Sticky Header

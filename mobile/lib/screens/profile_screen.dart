@@ -7,6 +7,7 @@ import 'login_screen.dart';
 import 'register_screen.dart';
 import 'teacher_dashboard_screen.dart';
 import 'admin_debug_screen.dart';
+import 'affiliate_dashboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -146,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // If loading, show loading indicator
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: backgroundDark,
+        backgroundColor: Colors.white,
         body: Center(
           child: CircularProgressIndicator(color: primaryGold),
         ),
@@ -160,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     // Otherwise show normal profile screen with Scaffold
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: user == null 
             ? _buildGuestView()
@@ -426,6 +427,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildStatItem('Gold', 'Rank'),
             ],
           ),
+          const SizedBox(height: 24),
+          // Quick Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildQuickActionButton(
+                icon: Icons.attach_money,
+                label: 'Affiliate',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AffiliateDashboardScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildQuickActionButton(
+                icon: Icons.wallet,
+                label: 'Ví',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Tính năng Ví đang được phát triển',
+                        style: GoogleFonts.inter(),
+                      ),
+                      backgroundColor: primaryGold,
+                    ),
+                  );
+                },
+              ),
+              _buildQuickActionButton(
+                icon: Icons.history,
+                label: 'Lịch sử',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Tính năng Lịch sử đang được phát triển',
+                        style: GoogleFonts.inter(),
+                      ),
+                      backgroundColor: primaryGold,
+                    ),
+                  );
+                },
+              ),
+              _buildQuickActionButton(
+                icon: Icons.settings,
+                label: 'Cài đặt',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Tính năng Cài đặt đang được phát triển',
+                        style: GoogleFonts.inter(),
+                      ),
+                      backgroundColor: primaryGold,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -451,6 +516,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: backgroundDark,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: primaryGold.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: primaryGold,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

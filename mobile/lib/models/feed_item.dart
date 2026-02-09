@@ -11,6 +11,7 @@ class FeedItem {
   final bool isVerified;
   final String? location;
   final String? musicCredit;
+  final String? pianoId; // ID of the piano associated with this video
 
   FeedItem({
     required this.id,
@@ -25,6 +26,7 @@ class FeedItem {
     required this.isVerified,
     this.location,
     this.musicCredit,
+    this.pianoId,
   });
 
   factory FeedItem.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class FeedItem {
       isVerified: json['is_verified'] as bool? ?? false,
       location: json['location'] as String?,
       musicCredit: json['music_credit'] as String?,
+      pianoId: json['piano_id'] as String?,
     );
   }
 
@@ -60,6 +63,7 @@ class FeedItem {
       'is_verified': isVerified,
       'location': location,
       'music_credit': musicCredit,
+      'piano_id': pianoId,
     };
   }
 
