@@ -15,6 +15,7 @@ class _AffiliateDashboardScreenState extends State<AffiliateDashboardScreen> {
   static const Color darkGold = Color(0xFFB39129);
   static const Color backgroundLight = Color(0xFFFAFAFA); // Light gray background
   static const Color cardLight = Color(0xFFFFF9F0); // Cream/beige card
+  static const Color cardDark = Color(0xFF1F1F1F); // Dark card/button for contrast
   static const Color textDark = Color(0xFF1A1A1A); // Dark text
   static const Color textGray = Color(0xFF666666); // Gray text
 
