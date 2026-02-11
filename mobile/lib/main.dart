@@ -2,10 +2,27 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/supabase_service.dart';
+import 'models/feed_item.dart';
+import 'screens/booking_screen.dart';
+import 'screens/create_video_screen.dart';
+import 'screens/messages_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/piano_rental_screen.dart';
+import 'screens/piano_detail_screen.dart';
+import 'screens/splash_screen.dart';
+import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://pjgjusdmzxrhgiptfvbg.supabase.co',
+    anonKey: 'sb_publishable_GMnCRFvRGqElGLerTiE-3g_YpGm-KoW',
+  );
+
   // Make the status bar transparent for full-screen immersive experience
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -15,12 +32,12 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  
+
   // Enable edge-to-edge mode
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
   );
-  
+
   runApp(const PianoSocialFeedApp());
 }
 
@@ -30,73 +47,285 @@ class PianoSocialFeedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Piano Social Feed',
+      title: 'Xpiano',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: const Color(0xFFD4AF37),
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: GoogleFonts.interTextTheme(),
-      ),
-      darkTheme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFFD4AF37),
         scaffoldBackgroundColor: const Color(0xFF121212),
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        useMaterial3: true,
       ),
-      themeMode: ThemeMode.dark,
-      home: const PianoFeedScreen(),
+      // Use SplashScreen to check session on app start
+      home: const SplashScreen(),
     );
   }
 }
 
-class PianoFeedScreen extends StatelessWidget {
+class PianoFeedScreen extends StatefulWidget {
   const PianoFeedScreen({super.key});
 
+  @override
+  State<PianoFeedScreen> createState() => _PianoFeedScreenState();
+}
+
+class _PianoFeedScreenState extends State<PianoFeedScreen> {
   // Color Palette
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
   static const Color backgroundDark = Color(0xFF121212);
   static const Color backgroundLight = Color(0xFFFFFFFF);
 
+  final SupabaseService _supabaseService = SupabaseService();
+  late Future<List<FeedItem>> _feedFuture;
+  final PageController _pageController = PageController(keepPage: true);
+  int _selectedIndex = 0;
+
+  // Guest Mode State
+  bool _isGuest = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _feedFuture = _supabaseService.getSocialFeed();
+    // Check actual auth state
+    _checkAuthState();
+  }
+
+  void _checkAuthState() {
+    final session = Supabase.instance.client.auth.currentSession;
+    setState(() {
+      _isGuest = session == null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Helper to check login before action
+  void _checkLogin(VoidCallback action) {
+    if (_isGuest) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const LoginBottomSheet(),
+      ).then((result) {
+        // Re-check auth status after sheet closes
+        _checkAuthState();
+
+        // If login was successful, execute the action
+        if (result == true) {
+          action();
+        }
+      });
+    } else {
+      action();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: backgroundLight,
       body: Stack(
         children: [
-          // Background Image with Overlay
-          _buildBackground(),
-          
-          // Top User Badge
-          _buildTopUserBadge(),
-          
-          // Right Sidebar
-          _buildRightSidebar(),
-          
-          // Bottom Content Area
-          _buildBottomContent(),
-          
-          // Custom Bottom Navigation
+          IndexedStack(
+            index: _selectedIndex,
+            children: [
+              // 0: Feed
+              FutureBuilder<List<FeedItem>>(
+                future: _feedFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: primaryGold),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text('Lỗi: ${snapshot.error}',
+                            style: GoogleFonts.inter(color: Colors.white)));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                        child: Text('Chưa có bài viết nào',
+                            style: GoogleFonts.inter(color: Colors.white)));
+                  }
+                  return _buildFeedView(snapshot.data!);
+                },
+              ),
+
+              // 1: Search - Piano Rental
+              const PianoRentalScreen(),
+
+              // 2: Add - Create Video
+              const CreateVideoScreen(),
+
+              // 3: Message
+              const MessagesScreen(),
+
+              // 4: Profile
+              const ProfileScreen(),
+            ],
+          ),
+
+          // Bottom Navigation
           _buildBottomNavigation(context),
         ],
       ),
     );
   }
 
+  Widget _buildFeedView(List<FeedItem> feedItems) {
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      itemCount: feedItems.length + 1,
+      pageSnapping: true,
+      physics: const ClampingScrollPhysics(),
+      itemBuilder: (context, index) {
+        if (index == feedItems.length) {
+          return _buildEndOfFeedPage();
+        }
+        final item = feedItems[index];
+        return _buildFeedPage(item, key: ValueKey('feed_${item.id}'));
+      },
+    );
+  }
+
+  // End of Feed Page
+  Widget _buildEndOfFeedPage() {
+    return Container(
+      color: backgroundLight,
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: primaryGold,
+                  size: 80,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Bạn đã xem hết!',
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Đã xem tất cả bài viết mới',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Refresh button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _feedFuture = _supabaseService.getSocialFeed();
+                      _pageController.jumpToPage(0);
+                    });
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: Text(
+                    'Làm mới',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeedPage(FeedItem item, {required Key key}) {
+    return Container(
+      key: key,
+      child: Stack(
+        children: [
+          // Background Image with Overlay
+          _buildBackground(item.mediaUrl, key: ValueKey('bg_${item.id}')),
+
+          // Top Verified Badge (if user is verified)
+          if (item.isVerified) _buildTopUserBadge(item),
+
+          // Right Sidebar
+          _buildRightSidebar(item),
+
+          // Bottom Content Area
+          _buildBottomContent(item),
+        ],
+      ),
+    );
+  }
+
   // Background with Image and Gradient Overlay
-  Widget _buildBackground() {
+  Widget _buildBackground(String mediaUrl, {required Key key}) {
     return Positioned.fill(
       child: Stack(
         children: [
           // Background Image
           Image.network(
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCKq9sywUNG4x1UvmUoDJH0IHinHs169Ou4pVMU7exbCYyq86YfzCJQi3dSoup_4I3zcg4gIbNqUd12c5gvCijdj_VDq4IuhSO5RewKd88jCLE-aPYmIhGKUUec3LP3rubvYlMN6FJ_rSpjDzKHs1ltGcUNBF02ADcBclxI30Fzdn1R1-ESyxBllH1XjC1nRqN955AJNNoJAJLYTthhJG7KyrNeHw-OrNgkmFAGVQ5tkJR66TA8wi6srhR39HoAcvgH6menJ3Rs1ik',
+            key: key,
+            mediaUrl.isNotEmpty
+                ? mediaUrl
+                : 'https://via.placeholder.com/1080x1920/000000/FFFFFF?text=No+Image',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
             color: Colors.black.withOpacity(0.25), // brightness-75 effect
             colorBlendMode: BlendMode.darken,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Icon(Icons.error, color: Colors.white54, size: 60),
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.black,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: primaryGold,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
           ),
           // Bottom Gradient Overlay
           Positioned(
@@ -123,70 +352,22 @@ class PianoFeedScreen extends StatelessWidget {
     );
   }
 
-  // Top User Badge (Avatar + Name + Verified Badge)
-  Widget _buildTopUserBadge() {
+  // Top User Badge (Verified Badge)
+  Widget _buildTopUserBadge(FeedItem item) {
     return Positioned(
       top: 56,
       left: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Info Row
-          Row(
-            children: [
-              // Avatar
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    'https://lh3.googleusercontent.com/aida-public/AB6AXuDKxlmxJns_LWxi89WF78U-TfnXTwLu9T8hgKEWppSMOeEVBeqrS2s6Wkl1edsYRe8bmmIP99B_lDmnnlBwy2T0yeDeXIcsORvRQuk1nonb7q2nE56fLzoC5RJgwpEsyv162N97iAz_0frjU5AX0z5_BzfQ2PnqkK3gx_PToTg2aStGczauBZViIvYZh7LONx8kORiS-CvQiBh3yOA9KyRId22zMgFiqGuJpnshCe1Tny2HTD4W7V3w_3cOyd2strmvpmy_G6Yi-Kg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Username
-              Text(
-                'LinhPiano',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.6),
-                      offset: const Offset(0, 1),
-                      blurRadius: 3,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           // Verified Badge
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
@@ -212,7 +393,7 @@ class PianoFeedScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Trải nghiệm thật',
+                      item.authorName,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -230,7 +411,7 @@ class PianoFeedScreen extends StatelessWidget {
   }
 
   // Right Sidebar with Actions
-  Widget _buildRightSidebar() {
+  Widget _buildRightSidebar(FeedItem item) {
     return Positioned(
       right: 12,
       bottom: 144,
@@ -278,30 +459,42 @@ class PianoFeedScreen extends StatelessWidget {
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            'https://lh3.googleusercontent.com/aida-public/AB6AXuCR6xMydmxeePPvOdZwqaXwD2qQ2HcZrmstyoVlDT5HGulO1czOuLSyRESDRNOHexvju6CvBcLnWxq2X_kh2X_cLOzF6HNgHEVwmRusukOlfDPlRHB3N2hCJq0w4Osq0IWr7vSiCQo1gGVUpU2bXqysXxX9EvrOSd_2O3oq1-ckOiD0bbKeEi-xbkOa6gRRLYOxy69Y9SB8RGiJsLu0QB6jeLBVawOK-IaE14xCGxog4IF-CMXGeK2fe1kZ74CQILbjEhtsuXQeAvo',
+                            item.authorAvatar.isNotEmpty
+                                ? item.authorAvatar
+                                : 'https://via.placeholder.com/150',
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey,
+                                child: const Icon(Icons.person,
+                                    color: Colors.white),
+                              );
+                            },
                           ),
                         ),
                       ),
                       Positioned(
                         bottom: 0,
                         left: 10,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1.5,
+                        child: GestureDetector(
+                          onTap: () => _checkLogin(() {}),
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
                             ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 10,
+                            child: const Center(
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 10,
+                              ),
                             ),
                           ),
                         ),
@@ -311,27 +504,43 @@ class PianoFeedScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 // Like Button
-                _buildSidebarAction(
-                  icon: Icons.favorite_border,
-                  label: '1.2K',
+                GestureDetector(
+                  onTap: () => _checkLogin(() {
+                    // TODO: Implement Like logic
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('Liked!')));
+                  }),
+                  child: _buildSidebarAction(
+                    icon: Icons.favorite_border,
+                    label: item.formattedLikes,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Comment Button
-                _buildSidebarAction(
-                  icon: Icons.chat_bubble_outline,
-                  label: '345',
+                GestureDetector(
+                  onTap: () => _checkLogin(() {}),
+                  child: _buildSidebarAction(
+                    icon: Icons.chat_bubble_outline,
+                    label: item.formattedComments,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Bookmark Button
-                _buildSidebarAction(
-                  icon: Icons.bookmark_border,
-                  label: '89',
+                GestureDetector(
+                  onTap: () => _checkLogin(() {}),
+                  child: _buildSidebarAction(
+                    icon: Icons.bookmark_border,
+                    label: item.formattedShares,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Share Button
-                _buildSidebarAction(
-                  icon: Icons.reply,
-                  label: '',
+                GestureDetector(
+                  onTap: () => _checkLogin(() {}),
+                  child: _buildSidebarAction(
+                    icon: Icons.reply,
+                    label: '',
+                  ),
                 ),
               ],
             ),
@@ -380,7 +589,7 @@ class PianoFeedScreen extends StatelessWidget {
   }
 
   // Bottom Content Area
-  Widget _buildBottomContent() {
+  Widget _buildBottomContent(FeedItem item) {
     return Positioned(
       bottom: 96,
       left: 0,
@@ -398,7 +607,7 @@ class PianoFeedScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '30 giây luyện ngón giúp tay mềm hơn 🎹',
+                    item.caption,
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       color: Colors.white,
@@ -411,140 +620,195 @@ class PianoFeedScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '#luyenngon #piano #xpiano #beginner',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.9),
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.6),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
+                  if (item.hashtags.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      item.hashtags.map((tag) => '#$tag').join(' '),
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.9),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 8),
             // Location Badge
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+            if (item.location != null && item.location!.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: primaryGold,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          item.location!,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ),
+            if (item.location != null && item.location!.isNotEmpty)
+              const SizedBox(height: 8),
+            // Music Info
+            if (item.musicCredit != null && item.musicCredit!.isNotEmpty)
+              Builder(
+                builder: (context) => SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.66,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        Icons.location_on,
-                        color: primaryGold,
-                        size: 12,
+                        Icons.music_note,
+                        color: Colors.white,
+                        size: 14,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Hà Nội',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.musicCredit!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            // Music Info
-            Builder(
-              builder: (context) => SizedBox(
-                width: MediaQuery.of(context).size.width * 0.66,
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.music_note,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Âm thanh gốc • @AnNhien',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 12),
             // Action Buttons
             Padding(
               padding: const EdgeInsets.only(right: 64),
               child: Row(
                 children: [
-                  // Borrow Piano Button
-                  Expanded(
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: const Color(0xFFE5E5E5),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
+                  // Borrow Piano Button - Only show if video has pianoId
+                  if (item.pianoId != null && item.pianoId!.isNotEmpty)
+                    Expanded(
+                      child: Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {},
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.piano,
-                                color: Color(0xFF333333),
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Mượn Đàn',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
+                          border: Border.all(
+                            color: const Color(0xFFE5E5E5),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(22),
+                            onTap: () => _checkLogin(() {
+                              // If video has piano_id, navigate to that specific piano
+                              if (item.pianoId != null &&
+                                  item.pianoId!.isNotEmpty) {
+                                // Mock piano data for the specific piano
+                                final pianoData = {
+                                  'id': item.pianoId,
+                                  'name': 'Yamaha C3X Grand Piano',
+                                  'category': 'Grand Piano',
+                                  'price': '500,000đ/giờ',
+                                  'location': item.location ?? 'TP.HCM',
+                                  'rating': 4.9,
+                                  'reviews': 128,
+                                  'image': item.mediaUrl,
+                                  'available': true,
+                                  'features': [
+                                    'Âm thanh đỉnh cao',
+                                    'Phòng cách âm',
+                                    'Điều hòa'
+                                  ],
+                                };
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PianoDetailScreen(
+                                      pianoId: item.pianoId!,
+                                      pianoData: pianoData,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                // If no piano_id, navigate to general booking screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const BookingScreen()),
+                                );
+                              }
+                            }),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.piano,
+                                  color: Color(0xFF333333),
+                                  size: 18,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Mượn Đàn',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+
+                  // Add spacing only if piano button is shown
+                  if (item.pianoId != null && item.pianoId!.isNotEmpty)
+                    const SizedBox(width: 12),
+
                   // Learn Now Button
                   Expanded(
                     child: Container(
@@ -572,7 +836,7 @@ class PianoFeedScreen extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {},
+                          onTap: () => _checkLogin(() {}),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -607,8 +871,10 @@ class PianoFeedScreen extends StatelessWidget {
 
   // Custom Bottom Navigation
   Widget _buildBottomNavigation(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    // Dark footer only on Home tab
+    final isDark = _selectedIndex == 0;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -617,14 +883,12 @@ class PianoFeedScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? backgroundDark : backgroundLight,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
           border: Border(
             top: BorderSide(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.05) 
-                  : const Color(0xFFF5F5F5),
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200]!,
               width: 1,
             ),
           ),
@@ -636,99 +900,86 @@ class PianoFeedScreen extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.home,
-                    label: 'Home',
-                    isActive: true,
-                    isDark: isDark,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.explore,
-                    label: 'Khám phá',
-                    isActive: false,
-                    isDark: isDark,
-                  ),
-                  // Center Add Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFE6C86E),
-                            Color(0xFFBF953F),
-                            Color(0xFFE6C86E),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryGold.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            10,
+            10,
+            10,
+            bottomInset > 0 ? bottomInset + 2 : 14,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavItem(
+                icon: Icons.home,
+                label: 'Home',
+                isActive: _selectedIndex == 0,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 0),
+              ),
+              _buildNavItem(
+                icon: Icons.explore,
+                label: 'Khám phá',
+                isActive: _selectedIndex == 1,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 1),
+              ),
+              Transform.translate(
+                offset: const Offset(0, -6),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFE6C86E),
+                        Color(0xFFBF953F),
+                        Color(0xFFE6C86E),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGold.withOpacity(0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {},
-                          child: const Center(
-                            child: Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => setState(() => _selectedIndex = 2),
+                      child: const Center(
+                        child: Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 30,
                         ),
                       ),
                     ),
                   ),
-                  _buildNavItem(
-                    icon: Icons.calendar_today,
-                    label: 'Booking',
-                    isActive: false,
-                    isDark: isDark,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.person_outline,
-                    label: 'Hồ sơ',
-                    isActive: false,
-                    isDark: isDark,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Bottom Indicator
-            Center(
-              child: Container(
-                width: 128,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark 
-                      ? const Color(0xFF3A3A3A) 
-                      : const Color(0xFFD1D1D1),
-                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              _buildNavItem(
+                icon: Icons.message_outlined,
+                label: 'Hộp thư',
+                isActive: _selectedIndex == 3,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 3),
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline,
+                label: 'Hồ sơ',
+                isActive: _selectedIndex == 4,
+                isDark: isDark,
+                onTap: () => setState(() => _selectedIndex = 4),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -739,34 +990,41 @@ class PianoFeedScreen extends StatelessWidget {
     required String label,
     required bool isActive,
     required bool isDark,
+    required VoidCallback onTap,
   }) {
-    final color = isActive 
-        ? primaryGold 
-        : (isDark ? const Color(0xFF808080) : const Color(0xFF9E9E9E));
-    
-    return SizedBox(
-      width: 60,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+    final color = isActive
+        ? primaryGold
+        : (isDark
+            ? const Color(0xFFB0B0B0)
+            : const Color(0xFF9E9E9E)); // Inactive
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
               color: color,
+              size: 23,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

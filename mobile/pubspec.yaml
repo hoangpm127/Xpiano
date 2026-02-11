@@ -36,6 +36,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
+  supabase_flutter: ^2.5.0
+  table_calendar: ^3.1.2
+  intl: ^0.19.0
+  flutter_animate: ^4.5.2
+  mailer: ^6.6.0
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +53,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/logo_xpiano_square.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
