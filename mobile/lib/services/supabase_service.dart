@@ -5,15 +5,37 @@ import '../models/piano.dart';
 
 import '../models/booking.dart';
 
+class FeedCursor {
+  final DateTime createdAt;
+  final int id;
+
+  const FeedCursor({
+    required this.createdAt,
+    required this.id,
+  });
+}
+
+class FeedPageResult {
+  final List<FeedItem> items;
+  final FeedCursor? nextCursor;
+  final bool hasMore;
+
+  const FeedPageResult({
+    required this.items,
+    required this.nextCursor,
+    required this.hasMore,
+  });
+}
+
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
-
 
   // --- AUTH METHODS ---
 
   User? get currentUser => _client.auth.currentUser;
 
-  Future<AuthResponse> signIn({required String email, required String password}) async {
+  Future<AuthResponse> signIn(
+      {required String email, required String password}) async {
     return await _client.auth.signInWithPassword(
       email: email,
       password: password,
@@ -24,9 +46,8 @@ class SupabaseService {
   Future<bool> emailExists(String email) async {
     try {
       // Call RPC function on Supabase to check email in auth.users
-      final result = await _client.rpc('check_email_exists', 
-        params: {'email_to_check': email}
-      );
+      final result = await _client
+          .rpc('check_email_exists', params: {'email_to_check': email});
       return result == true;
     } catch (e) {
       print('Error checking email: $e');
@@ -49,7 +70,7 @@ class SupabaseService {
       data: {'full_name': fullName, 'role': role},
       emailRedirectTo: null, // Disable email confirmation link
     );
-    
+
     return response;
   }
 
@@ -57,12 +78,13 @@ class SupabaseService {
     await _client.auth.signOut();
   }
 
-  Future<void> updateUserMetadata({required String fullName, required String role}) async {
+  Future<void> updateUserMetadata(
+      {required String fullName, required String role}) async {
     await _client.auth.updateUser(
       UserAttributes(data: {'full_name': fullName, 'role': role}),
     );
   }
-  
+
   // --- OTP METHODS ---
 
   // 1. Send OTP to Email
@@ -110,13 +132,14 @@ class SupabaseService {
     if (userId == null) throw Exception('User not authenticated');
 
     final filePath = '$userId/$folder/$fileName';
-    
+
     // Check file size (max 50MB)
     final fileSizeMB = fileBytes.length / (1024 * 1024);
     if (fileSizeMB > 50) {
-      throw Exception('File quá lớn (${fileSizeMB.toStringAsFixed(1)}MB). Tối đa 50MB');
+      throw Exception(
+          'File quá lớn (${fileSizeMB.toStringAsFixed(1)}MB). Tối đa 50MB');
     }
-    
+
     // Retry logic with exponential backoff
     int attempts = 0;
     while (attempts < maxRetries) {
@@ -126,9 +149,7 @@ class SupabaseService {
             .uploadBinary(filePath, fileBytes)
             .timeout(timeout);
 
-        return _client.storage
-            .from('teacher-profiles')
-            .getPublicUrl(filePath);
+        return _client.storage.from('teacher-profiles').getPublicUrl(filePath);
       } catch (e) {
         attempts++;
         if (attempts >= maxRetries) {
@@ -138,7 +159,7 @@ class SupabaseService {
         await Future.delayed(Duration(seconds: 2 * attempts));
       }
     }
-    
+
     throw Exception('Upload failed after $maxRetries attempts');
   }
 
@@ -161,7 +182,8 @@ class SupabaseService {
   // --- TEACHER PROFILE METHODS ---
 
   // Create teacher profile
-  Future<Map<String, dynamic>> createTeacherProfile(Map<String, dynamic> profileData) async {
+  Future<Map<String, dynamic>> createTeacherProfile(
+      Map<String, dynamic> profileData) async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
@@ -170,17 +192,15 @@ class SupabaseService {
       ...profileData,
     };
 
-    final response = await _client
-        .from('teacher_profiles')
-        .insert(data)
-        .select()
-        .single();
+    final response =
+        await _client.from('teacher_profiles').insert(data).select().single();
 
     return response as Map<String, dynamic>;
   }
 
   // Update teacher profile
-  Future<Map<String, dynamic>> updateTeacherProfile(Map<String, dynamic> profileData) async {
+  Future<Map<String, dynamic>> updateTeacherProfile(
+      Map<String, dynamic> profileData) async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
@@ -250,6 +270,53 @@ class SupabaseService {
     }
   }
 
+  Future<FeedPageResult> getSocialFeedPage({
+    int limit = 12,
+    FeedCursor? cursor,
+  }) async {
+    try {
+      dynamic query = _client
+          .from('social_feed')
+          .select()
+          .order('created_at', ascending: false)
+          .order('id', ascending: false)
+          .limit(limit);
+
+      if (cursor != null) {
+        final createdAtIso = cursor.createdAt.toUtc().toIso8601String();
+        query = query.or(
+          'created_at.lt.$createdAtIso,and(created_at.eq.$createdAtIso,id.lt.${cursor.id})',
+        );
+      }
+
+      final response = await query;
+      final items = (response as List)
+          .map((item) => FeedItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      final hasMore = items.length == limit;
+      FeedCursor? nextCursor;
+
+      if (hasMore && items.isNotEmpty) {
+        final last = items.last;
+        nextCursor = FeedCursor(createdAt: last.createdAt, id: last.id);
+      }
+
+      return FeedPageResult(
+        items: items,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+      );
+    } catch (e) {
+      print('Error fetching social feed page: $e');
+      return const FeedPageResult(
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      );
+    }
+  }
+
   // Stream Social Feed (real-time updates)
   Stream<List<FeedItem>> watchSocialFeed() {
     return _client
@@ -272,16 +339,16 @@ class SupabaseService {
             .select()
             .eq('category', category)
             .order('rating', ascending: false);
-            
+
         return (response as List)
             .map((item) => Piano.fromJson(item as Map<String, dynamic>))
             .toList();
       } else {
-         final response = await _client
+        final response = await _client
             .from('pianos')
             .select()
             .order('rating', ascending: false);
-            
+
         return (response as List)
             .map((item) => Piano.fromJson(item as Map<String, dynamic>))
             .toList();
@@ -330,11 +397,11 @@ class SupabaseService {
           .select('*, pianos(name, image_url)')
           .eq('user_id', user.id) // Filter by owner
           .order('start_time', ascending: false);
-      
+
       final List<Booking> bookings = (response as List)
           .map((item) => Booking.fromJson(item as Map<String, dynamic>))
           .toList();
-          
+
       return bookings;
     } catch (e) {
       print('Error fetching bookings: $e');
@@ -347,8 +414,7 @@ class SupabaseService {
     try {
       await _client
           .from('bookings')
-          .update({'status': 'cancelled'})
-          .eq('id', id);
+          .update({'status': 'cancelled'}).eq('id', id);
     } catch (e) {
       print('Error cancelling booking: $e');
       throw e;
@@ -357,14 +423,28 @@ class SupabaseService {
 
   // --- INTERACTION METHODS ---
 
-  Future<void> incrementLikes(int feedId, int currentCount) async {
+  Future<void> incrementLikesAtomic(int feedId) async {
+    // Server-side atomic increment only. Requires one of these RPCs on DB:
+    // - increment_social_feed_likes(p_feed_id integer)
+    // - increment_likes(feed_id integer)
     try {
-      await _client
-          .from('social_feed')
-          .update({'likes_count': currentCount + 1})
-          .eq('id', feedId);
+      await _client.rpc(
+        'increment_social_feed_likes',
+        params: {'p_feed_id': feedId},
+      );
+      return;
+    } catch (_) {
+      // Backward-compat fallback RPC name.
+    }
+
+    try {
+      await _client.rpc(
+        'increment_likes',
+        params: {'feed_id': feedId},
+      );
     } catch (e) {
-      print('Error incrementing likes: $e');
+      print('Error incrementing likes atomically: $e');
+      rethrow;
     }
   }
 
@@ -372,8 +452,7 @@ class SupabaseService {
     try {
       await _client
           .from('social_feed')
-          .update({'comments_count': currentCount + 1})
-          .eq('id', feedId);
+          .update({'comments_count': currentCount + 1}).eq('id', feedId);
     } catch (e) {
       print('Error incrementing comments: $e');
     }
@@ -383,8 +462,7 @@ class SupabaseService {
     try {
       await _client
           .from('social_feed')
-          .update({'shares_count': currentCount + 1})
-          .eq('id', feedId);
+          .update({'shares_count': currentCount + 1}).eq('id', feedId);
     } catch (e) {
       print('Error incrementing shares: $e');
     }
@@ -412,13 +490,10 @@ class SupabaseService {
       }
 
       // Update all to approved
-      await _client
-          .from('teacher_profiles')
-          .update({
-            'verification_status': 'approved',
-            'approved_at': DateTime.now().toIso8601String(),
-          })
-          .eq('verification_status', 'pending');
+      await _client.from('teacher_profiles').update({
+        'verification_status': 'approved',
+        'approved_at': DateTime.now().toIso8601String(),
+      }).eq('verification_status', 'pending');
 
       return {
         'success': true,
@@ -449,4 +524,3 @@ class SupabaseService {
     }
   }
 }
-

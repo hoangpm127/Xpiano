@@ -12,6 +12,7 @@ import 'screens/profile_screen.dart';
 import 'screens/piano_rental_screen.dart';
 import 'screens/piano_detail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'widgets/feed_media_item.dart';
 import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
 void main() async {
@@ -69,7 +70,8 @@ class PianoFeedScreen extends StatefulWidget {
   State<PianoFeedScreen> createState() => _PianoFeedScreenState();
 }
 
-class _PianoFeedScreenState extends State<PianoFeedScreen> {
+class _PianoFeedScreenState extends State<PianoFeedScreen>
+    with WidgetsBindingObserver {
   // Color Palette
   static const Color primaryGold = Color(0xFFD4AF37);
   static const Color darkGold = Color(0xFFB39129);
@@ -77,8 +79,23 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   static const Color backgroundLight = Color(0xFFFFFFFF);
 
   final SupabaseService _supabaseService = SupabaseService();
-  late Future<List<FeedItem>> _feedFuture;
   final PageController _pageController = PageController(keepPage: true);
+  final List<FeedItem> _feedItems = [];
+  FeedCursor? _nextCursor;
+  int _currentFeedIndex = 0;
+  bool _isInitialFeedLoading = true;
+  bool _isLoadingMoreFeed = false;
+  bool _hasMoreFeed = true;
+  String? _feedError;
+  AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
+  bool _isHoldingToPause = false;
+  int? _manuallyPausedItemId;
+  int? _heartAnimatingItemId;
+  final Set<int> _likedFeedIds = {};
+  final Set<int> _likeRequestsInFlight = {};
+  final Map<int, int> _likeCountOverrides = {};
+
+  static const int _feedPageSize = 12;
   int _selectedIndex = 0;
 
   // Guest Mode State
@@ -87,9 +104,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   @override
   void initState() {
     super.initState();
-    _feedFuture = _supabaseService.getSocialFeed();
-    // Check actual auth state
+    WidgetsBinding.instance.addObserver(this);
     _checkAuthState();
+    _loadInitialFeed();
   }
 
   void _checkAuthState() {
@@ -99,10 +116,282 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     });
   }
 
+  Future<void> _loadInitialFeed() async {
+    setState(() {
+      _isInitialFeedLoading = true;
+      _isLoadingMoreFeed = false;
+      _hasMoreFeed = true;
+      _feedError = null;
+      _currentFeedIndex = 0;
+      _isHoldingToPause = false;
+      _manuallyPausedItemId = null;
+      _nextCursor = null;
+      _feedItems.clear();
+    });
+
+    try {
+      final page =
+          await _supabaseService.getSocialFeedPage(limit: _feedPageSize);
+      if (!mounted) return;
+
+      setState(() {
+        _feedItems.addAll(page.items);
+        _nextCursor = page.nextCursor;
+        _hasMoreFeed = page.hasMore;
+        _isInitialFeedLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isInitialFeedLoading = false;
+        _feedError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _loadMoreFeedIfNeeded(int currentIndex) async {
+    final remaining = _feedItems.length - 1 - currentIndex;
+    if (remaining > 3 || !_hasMoreFeed || _isLoadingMoreFeed) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMoreFeed = true;
+    });
+
+    try {
+      final page = await _supabaseService.getSocialFeedPage(
+        limit: _feedPageSize,
+        cursor: _nextCursor,
+      );
+      if (!mounted) return;
+
+      final existingIds = _feedItems.map((item) => item.id).toSet();
+      final newItems =
+          page.items.where((item) => !existingIds.contains(item.id)).toList();
+
+      setState(() {
+        _feedItems.addAll(newItems);
+        _nextCursor = page.nextCursor;
+        _hasMoreFeed = page.hasMore && newItems.isNotEmpty;
+        _isLoadingMoreFeed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMoreFeed = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    setState(() {
+      _appLifecycleState = state;
+      if (state != AppLifecycleState.resumed) {
+        _isHoldingToPause = false;
+        _manuallyPausedItemId = null;
+      }
+    });
+  }
+
+  bool get _isFeedTabVisible => _selectedIndex == 0;
+
+  bool get _isFeedPlaybackActive =>
+      _isFeedTabVisible && _appLifecycleState == AppLifecycleState.resumed;
+
+  int _effectiveLikesCount(FeedItem item) {
+    return _likeCountOverrides[item.id] ?? item.likesCount;
+  }
+
+  bool _isItemLiked(FeedItem item) {
+    return _likedFeedIds.contains(item.id);
+  }
+
+  bool _shouldPlayItemVideo(FeedItem item, int index) {
+    if (!item.isVideo) return false;
+    if (index != _currentFeedIndex) return false;
+    if (!_isFeedPlaybackActive) return false;
+    if (_isHoldingToPause) return false;
+    return _manuallyPausedItemId != item.id;
+  }
+
+  bool _shouldPreloadItemVideo(FeedItem item, int index) {
+    if (!item.isVideo) return false;
+
+    final isCurrent = index == _currentFeedIndex;
+    final isNext = index == _currentFeedIndex + 1;
+
+    final keepCurrentWarm = !_isFeedPlaybackActive && isCurrent;
+    final preloadNext = _isFeedTabVisible && isNext;
+    return keepCurrentWarm || preloadNext;
+  }
+
+  void _onFeedTap(FeedItem item, int index) {
+    if (!_isFeedPlaybackActive || !item.isVideo || index != _currentFeedIndex) {
+      return;
+    }
+
+    setState(() {
+      _isHoldingToPause = false;
+      _manuallyPausedItemId =
+          (_manuallyPausedItemId == item.id) ? null : item.id;
+    });
+  }
+
+  void _onFeedLongPressStart(
+    FeedItem item,
+    int index,
+    LongPressStartDetails details,
+  ) {
+    if (!_isFeedPlaybackActive || !item.isVideo || index != _currentFeedIndex) {
+      return;
+    }
+    setState(() {
+      _isHoldingToPause = true;
+    });
+  }
+
+  void _onFeedLongPressEnd(
+    FeedItem item,
+    int index,
+    LongPressEndDetails details,
+  ) {
+    if (!item.isVideo || index != _currentFeedIndex || !_isHoldingToPause) {
+      return;
+    }
+    setState(() {
+      _isHoldingToPause = false;
+    });
+  }
+
+  Future<void> _submitLikeOptimistic(FeedItem item) async {
+    if (_likedFeedIds.contains(item.id) ||
+        _likeRequestsInFlight.contains(item.id)) {
+      return;
+    }
+
+    final previousCount = _effectiveLikesCount(item);
+    setState(() {
+      _likedFeedIds.add(item.id);
+      _likeRequestsInFlight.add(item.id);
+      _likeCountOverrides[item.id] = previousCount + 1;
+    });
+
+    try {
+      await _supabaseService.incrementLikesAtomic(item.id);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _likedFeedIds.remove(item.id);
+          _likeCountOverrides[item.id] = previousCount;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _likeRequestsInFlight.remove(item.id);
+        });
+      }
+    }
+  }
+
+  void _showHeartAnimation(int feedId) {
+    setState(() {
+      _heartAnimatingItemId = feedId;
+    });
+    Future.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted || _heartAnimatingItemId != feedId) return;
+      setState(() {
+        _heartAnimatingItemId = null;
+      });
+    });
+  }
+
+  void _onFeedDoubleTap(FeedItem item, int index) {
+    if (index != _currentFeedIndex) return;
+    _showHeartAnimation(item.id);
+    _checkLogin(() {
+      _submitLikeOptimistic(item);
+    });
+  }
+
+  Widget _buildHeartOverlay(FeedItem item) {
+    final visible = _heartAnimatingItemId == item.id;
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: AnimatedScale(
+              scale: visible ? 1 : 0.78,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutBack,
+              child: Icon(
+                Icons.favorite,
+                size: 104,
+                color: Colors.white.withOpacity(0.92),
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.32),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPauseOverlay(FeedItem item, int index) {
+    final visible = _manuallyPausedItemId == item.id &&
+        index == _currentFeedIndex &&
+        _isFeedPlaybackActive;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: const Duration(milliseconds: 140),
+            child: AnimatedScale(
+              scale: visible ? 1 : 0.9,
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOut,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.55),
+                    width: 1.2,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.pause,
+                  color: Colors.white,
+                  size: 38,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // Helper to check login before action
@@ -137,27 +426,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
             index: _selectedIndex,
             children: [
               // 0: Feed
-              FutureBuilder<List<FeedItem>>(
-                future: _feedFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: primaryGold),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                        child: Text('Lỗi: ${snapshot.error}',
-                            style: GoogleFonts.inter(color: Colors.white)));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                        child: Text('Chưa có bài viết nào',
-                            style: GoogleFonts.inter(color: Colors.white)));
-                  }
-                  return _buildFeedView(snapshot.data!);
-                },
-              ),
+              _buildFeedTab(),
 
               // 1: Search - Piano Rental
               const PianoRentalScreen(),
@@ -180,20 +449,93 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     );
   }
 
-  Widget _buildFeedView(List<FeedItem> feedItems) {
+  Widget _buildFeedTab() {
+    if (_isInitialFeedLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: primaryGold),
+      );
+    }
+
+    if (_feedError != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Lỗi tải feed',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadInitialFeed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGold,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_feedItems.isEmpty) {
+      return Center(
+        child: Text(
+          'Chưa có bài viết nào',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+      );
+    }
+
+    return _buildFeedView();
+  }
+
+  Widget _buildFeedView() {
     return PageView.builder(
       controller: _pageController,
       scrollDirection: Axis.vertical,
-      itemCount: feedItems.length + 1,
+      onPageChanged: (index) {
+        if (index < _feedItems.length) {
+          setState(() {
+            _currentFeedIndex = index;
+            _isHoldingToPause = false;
+            _manuallyPausedItemId = null;
+          });
+          _loadMoreFeedIfNeeded(index);
+        } else if (_hasMoreFeed) {
+          _loadMoreFeedIfNeeded(_feedItems.length - 1);
+        }
+      },
+      itemCount: _feedItems.length + 1,
       pageSnapping: true,
       physics: const ClampingScrollPhysics(),
       itemBuilder: (context, index) {
-        if (index == feedItems.length) {
-          return _buildEndOfFeedPage();
+        if (index == _feedItems.length) {
+          return _hasMoreFeed || _isLoadingMoreFeed
+              ? _buildFeedLoadingTailPage()
+              : _buildEndOfFeedPage();
         }
-        final item = feedItems[index];
-        return _buildFeedPage(item, key: ValueKey('feed_${item.id}'));
+        final item = _feedItems[index];
+        return _buildFeedPage(
+          item,
+          index: index,
+          key: ValueKey('feed_${item.id}'),
+        );
       },
+    );
+  }
+
+  Widget _buildFeedLoadingTailPage() {
+    return Container(
+      color: backgroundDark,
+      child: const Center(
+        child: CircularProgressIndicator(color: primaryGold),
+      ),
     );
   }
 
@@ -233,10 +575,10 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 // Refresh button
                 ElevatedButton.icon(
                   onPressed: () {
-                    setState(() {
-                      _feedFuture = _supabaseService.getSocialFeed();
+                    _loadInitialFeed();
+                    if (_pageController.hasClients) {
                       _pageController.jumpToPage(0);
-                    });
+                    }
                   },
                   icon: const Icon(Icons.refresh),
                   label: Text(
@@ -266,68 +608,34 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     );
   }
 
-  Widget _buildFeedPage(FeedItem item, {required Key key}) {
+  Widget _buildFeedPage(FeedItem item, {required int index, required Key key}) {
+    final shouldPlay = _shouldPlayItemVideo(item, index);
+    final shouldPreload = _shouldPreloadItemVideo(item, index);
+
     return Container(
       key: key,
       child: Stack(
         children: [
-          // Background Image with Overlay
-          _buildBackground(item.mediaUrl, key: ValueKey('bg_${item.id}')),
-
-          // Top Verified Badge (if user is verified)
-          if (item.isVerified) _buildTopUserBadge(item),
-
-          // Right Sidebar
-          _buildRightSidebar(item),
-
-          // Bottom Content Area
-          _buildBottomContent(item),
-        ],
-      ),
-    );
-  }
-
-  // Background with Image and Gradient Overlay
-  Widget _buildBackground(String mediaUrl, {required Key key}) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          // Background Image
-          Image.network(
-            key: key,
-            mediaUrl.isNotEmpty
-                ? mediaUrl
-                : 'https://via.placeholder.com/1080x1920/000000/FFFFFF?text=No+Image',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black.withOpacity(0.25), // brightness-75 effect
-            colorBlendMode: BlendMode.darken,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.black,
-                child: const Center(
-                  child: Icon(Icons.error, color: Colors.white54, size: 60),
-                ),
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                color: Colors.black,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: primaryGold,
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                ),
-              );
-            },
+          FeedMediaItem(
+            key: ValueKey('media_${item.id}'),
+            item: item,
+            isActive: index == _currentFeedIndex && _isFeedTabVisible,
+            shouldPreload: shouldPreload,
+            shouldPlay: shouldPlay,
           ),
-          // Bottom Gradient Overlay
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => _onFeedTap(item, index),
+              onDoubleTap: () => _onFeedDoubleTap(item, index),
+              onLongPressStart: (details) =>
+                  _onFeedLongPressStart(item, index, details),
+              onLongPressEnd: (details) =>
+                  _onFeedLongPressEnd(item, index, details),
+            ),
+          ),
+          _buildPauseOverlay(item, index),
+          _buildHeartOverlay(item),
           Positioned(
             left: 0,
             right: 0,
@@ -347,6 +655,19 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
               ),
             ),
           ),
+
+          // Top Verified Badge (if user is verified)
+          if (item.isVerified) _buildTopUserBadge(item),
+
+          // Right Sidebar
+          _buildRightSidebar(
+            item,
+            likeCount: _effectiveLikesCount(item),
+            isLiked: _isItemLiked(item),
+          ),
+
+          // Bottom Content Area
+          _buildBottomContent(item),
         ],
       ),
     );
@@ -411,7 +732,11 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
   }
 
   // Right Sidebar with Actions
-  Widget _buildRightSidebar(FeedItem item) {
+  Widget _buildRightSidebar(
+    FeedItem item, {
+    required int likeCount,
+    required bool isLiked,
+  }) {
     return Positioned(
       right: 12,
       bottom: 144,
@@ -506,13 +831,12 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 // Like Button
                 GestureDetector(
                   onTap: () => _checkLogin(() {
-                    // TODO: Implement Like logic
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('Liked!')));
+                    _submitLikeOptimistic(item);
                   }),
                   child: _buildSidebarAction(
-                    icon: Icons.favorite_border,
-                    label: item.formattedLikes,
+                    icon: isLiked ? Icons.favorite : Icons.favorite_border,
+                    iconColor: isLiked ? Colors.redAccent : Colors.white,
+                    label: item.formatCount(likeCount),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -550,13 +874,17 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     );
   }
 
-  Widget _buildSidebarAction({required IconData icon, required String label}) {
+  Widget _buildSidebarAction({
+    required IconData icon,
+    required String label,
+    Color iconColor = Colors.white,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          color: Colors.white,
+          color: iconColor,
           size: 30,
           shadows: [
             Shadow(
@@ -753,7 +1081,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                                   'location': item.location ?? 'TP.HCM',
                                   'rating': 4.9,
                                   'reviews': 128,
-                                  'image': item.mediaUrl,
+                                  'image': item.thumbUrl ?? item.mediaUrl,
                                   'available': true,
                                   'features': [
                                     'Âm thanh đỉnh cao',
@@ -869,6 +1197,17 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
     );
   }
 
+  void _onTabChanged(int nextIndex) {
+    if (_selectedIndex == nextIndex) return;
+    setState(() {
+      if (_selectedIndex == 0 && nextIndex != 0) {
+        _isHoldingToPause = false;
+        _manuallyPausedItemId = null;
+      }
+      _selectedIndex = nextIndex;
+    });
+  }
+
   // Custom Bottom Navigation
   Widget _buildBottomNavigation(BuildContext context) {
     // Dark footer only on Home tab
@@ -915,14 +1254,14 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 label: 'Home',
                 isActive: _selectedIndex == 0,
                 isDark: isDark,
-                onTap: () => setState(() => _selectedIndex = 0),
+                onTap: () => _onTabChanged(0),
               ),
               _buildNavItem(
                 icon: Icons.explore,
                 label: 'Khám phá',
                 isActive: _selectedIndex == 1,
                 isDark: isDark,
-                onTap: () => setState(() => _selectedIndex = 1),
+                onTap: () => _onTabChanged(1),
               ),
               Transform.translate(
                 offset: const Offset(0, -6),
@@ -952,7 +1291,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
-                      onTap: () => setState(() => _selectedIndex = 2),
+                      onTap: () => _onTabChanged(2),
                       child: const Center(
                         child: Icon(
                           Icons.add,
@@ -969,14 +1308,14 @@ class _PianoFeedScreenState extends State<PianoFeedScreen> {
                 label: 'Hộp thư',
                 isActive: _selectedIndex == 3,
                 isDark: isDark,
-                onTap: () => setState(() => _selectedIndex = 3),
+                onTap: () => _onTabChanged(3),
               ),
               _buildNavItem(
                 icon: Icons.person_outline,
                 label: 'Hồ sơ',
                 isActive: _selectedIndex == 4,
                 isDark: isDark,
-                onTap: () => setState(() => _selectedIndex = 4),
+                onTap: () => _onTabChanged(4),
               ),
             ],
           ),

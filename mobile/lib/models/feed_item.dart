@@ -1,9 +1,12 @@
 class FeedItem {
   final int id;
+  final DateTime createdAt;
   final String authorName;
   final String authorAvatar;
   final String caption;
   final String mediaUrl;
+  final String? videoUrl;
+  final String? thumbUrl;
   final int likesCount;
   final int commentsCount;
   final int sharesCount;
@@ -15,10 +18,13 @@ class FeedItem {
 
   FeedItem({
     required this.id,
+    required this.createdAt,
     required this.authorName,
     required this.authorAvatar,
     required this.caption,
     required this.mediaUrl,
+    this.videoUrl,
+    this.thumbUrl,
     required this.likesCount,
     required this.commentsCount,
     required this.sharesCount,
@@ -30,12 +36,28 @@ class FeedItem {
   });
 
   factory FeedItem.fromJson(Map<String, dynamic> json) {
+    final rawMediaUrl = (json['media_url'] as String?)?.trim() ?? '';
+    final rawVideoUrl = (json['video_url'] as String?)?.trim();
+    final rawThumbUrl = (json['thumb_url'] as String?)?.trim();
+
+    final resolvedVideoUrl = (rawVideoUrl != null && rawVideoUrl.isNotEmpty)
+        ? rawVideoUrl
+        : (_looksLikeVideo(rawMediaUrl) ? rawMediaUrl : null);
+
+    final resolvedThumbUrl = (rawThumbUrl != null && rawThumbUrl.isNotEmpty)
+        ? rawThumbUrl
+        : (resolvedVideoUrl == null ? rawMediaUrl : null);
+
     return FeedItem(
       id: json['id'] as int,
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       authorName: json['author_name'] as String? ?? 'Unknown',
       authorAvatar: json['author_avatar'] as String? ?? '',
       caption: json['caption'] as String? ?? '',
-      mediaUrl: json['media_url'] as String? ?? '',
+      mediaUrl: rawMediaUrl,
+      videoUrl: resolvedVideoUrl,
+      thumbUrl: resolvedThumbUrl,
       likesCount: json['likes_count'] as int? ?? 0,
       commentsCount: json['comments_count'] as int? ?? 0,
       sharesCount: json['shares_count'] as int? ?? 0,
@@ -52,10 +74,13 @@ class FeedItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'created_at': createdAt.toIso8601String(),
       'author_name': authorName,
       'author_avatar': authorAvatar,
       'caption': caption,
       'media_url': mediaUrl,
+      'video_url': videoUrl,
+      'thumb_url': thumbUrl,
       'likes_count': likesCount,
       'comments_count': commentsCount,
       'shares_count': sharesCount,
@@ -80,4 +105,13 @@ class FeedItem {
   String get formattedLikes => formatCount(likesCount);
   String get formattedComments => formatCount(commentsCount);
   String get formattedShares => formatCount(sharesCount);
+
+  bool get isVideo => videoUrl != null && videoUrl!.isNotEmpty;
+
+  static bool _looksLikeVideo(String url) {
+    final lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.mp4') ||
+        lowerUrl.contains('.mp4?') ||
+        lowerUrl.contains('/mp4');
+  }
 }
