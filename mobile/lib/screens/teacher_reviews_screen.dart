@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../features/common/stub_helper.dart';
 
 class TeacherReviewsScreen extends StatefulWidget {
   const TeacherReviewsScreen({Key? key}) : super(key: key);
@@ -487,11 +488,12 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Xem tất cả đánh giá')),
-                );
-              },
+              onPressed: () => openStub(
+                context,
+                'Xem tất cả đánh giá',
+                'Danh sách đánh giá đầy đủ sẽ được bổ sung ở bản tiếp theo.',
+                icon: Icons.reviews_outlined,
+              ),
               child: Text(
                 'Xem tất cả',
                 style: GoogleFonts.inter(
@@ -716,11 +718,12 @@ class _TeacherReviewsScreenState extends State<TeacherReviewsScreen> {
           
           // Button
           GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cải thiện hồ sơ...')),
-              );
-            },
+            onTap: () => openStub(
+              context,
+              'Cải thiện hồ sơ',
+              'Công cụ tối ưu hồ sơ sẽ có trong bản nâng cấp tiếp theo.',
+              icon: Icons.auto_awesome,
+            ),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),

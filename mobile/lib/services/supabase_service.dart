@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/feed_item.dart';
 import '../models/piano.dart';
@@ -29,6 +30,7 @@ class FeedPageResult {
 
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
+  bool? _socialFeedHasMediaTypeCache;
 
   // --- AUTH METHODS ---
 
@@ -251,6 +253,99 @@ class SupabaseService {
 
   // --- FEED METHODS ---
 
+  Future<String> uploadVideoToStorage({
+    required String filePath,
+    required String destPath,
+    int maxRetries = 2,
+    Duration timeout = const Duration(seconds: 120),
+  }) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Video file not found at path: $filePath');
+    }
+
+    if (destPath.trim().isEmpty) {
+      throw Exception('Destination path is required');
+    }
+
+    int attempt = 0;
+    Object? lastError;
+    final storage = _client.storage.from('videos-feed');
+
+    while (attempt <= maxRetries) {
+      try {
+        await storage
+            .upload(
+              destPath,
+              file,
+              fileOptions: const FileOptions(
+                contentType: 'video/mp4',
+                upsert: false,
+              ),
+            )
+            .timeout(timeout);
+        return storage.getPublicUrl(destPath);
+      } catch (e) {
+        lastError = e;
+        attempt++;
+        if (attempt > maxRetries) break;
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+
+    throw Exception('Upload video failed: $lastError');
+  }
+
+  Future<Map<String, dynamic>> createSocialFeedPost({
+    required String caption,
+    required String mediaUrl,
+    String mediaType = 'video',
+    List<String> hashtags = const [],
+  }) async {
+    if (mediaUrl.trim().isEmpty) {
+      throw Exception('mediaUrl is required');
+    }
+
+    final author = await _resolveCurrentAuthor();
+    final payload = <String, dynamic>{
+      'author_name': author.name,
+      'author_avatar': author.avatarUrl ?? '',
+      'caption': caption.trim(),
+      'media_url': mediaUrl.trim(),
+      'likes_count': 0,
+      'comments_count': 0,
+      'shares_count': 0,
+      'hashtags': hashtags,
+      'is_verified': false,
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    if (await _socialFeedHasMediaTypeColumn()) {
+      payload['media_type'] = mediaType;
+    }
+
+    try {
+      final inserted =
+          await _client.from('social_feed').insert(payload).select().single();
+      return Map<String, dynamic>.from(inserted);
+    } on PostgrestException catch (e) {
+      final needsTextId = (e.message).toLowerCase().contains('column "id"') &&
+          (e.message.toLowerCase().contains('null') ||
+              e.code == '23502' ||
+              e.code == 'PGRST204');
+      if (!needsTextId) rethrow;
+
+      final fallbackPayload = Map<String, dynamic>.from(payload)
+        ..['id'] = await _nextTextSocialFeedId();
+      final inserted = await _client
+          .from('social_feed')
+          .insert(fallbackPayload)
+          .select()
+          .single();
+      return Map<String, dynamic>.from(inserted);
+    }
+  }
+
   // Fetch Social Feed
   Future<List<FeedItem>> getSocialFeed() async {
     try {
@@ -468,6 +563,64 @@ class SupabaseService {
     }
   }
 
+  Future<bool> _socialFeedHasMediaTypeColumn() async {
+    if (_socialFeedHasMediaTypeCache != null) {
+      return _socialFeedHasMediaTypeCache!;
+    }
+    try {
+      await _client.from('social_feed').select('media_type').limit(1);
+      _socialFeedHasMediaTypeCache = true;
+    } catch (_) {
+      _socialFeedHasMediaTypeCache = false;
+    }
+    return _socialFeedHasMediaTypeCache!;
+  }
+
+  Future<String> _nextTextSocialFeedId() async {
+    final rows = await _client.from('social_feed').select('id');
+    var maxId = 0;
+    for (final row in rows as List) {
+      final rawId = row is Map<String, dynamic> ? row['id'] : null;
+      final parsed = int.tryParse(rawId?.toString() ?? '');
+      if (parsed != null && parsed > maxId) {
+        maxId = parsed;
+      }
+    }
+    return (maxId + 1).toString();
+  }
+
+  Future<_AuthorData> _resolveCurrentAuthor() async {
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    String? displayName = user.userMetadata?['full_name'] as String?;
+    String? avatarUrl = user.userMetadata?['avatar_url'] as String?;
+
+    try {
+      final profile = await _client
+          .from('teacher_profiles')
+          .select('full_name, avatar_url')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (profile != null) {
+        displayName = (profile['full_name'] as String?) ?? displayName;
+        avatarUrl = (profile['avatar_url'] as String?) ?? avatarUrl;
+      }
+    } catch (_) {
+      // Keep auth metadata fallback.
+    }
+
+    final fallbackName = user.email?.split('@').first ?? 'Teacher';
+    return _AuthorData(
+      name: (displayName?.trim().isNotEmpty ?? false)
+          ? displayName!.trim()
+          : fallbackName,
+      avatarUrl: avatarUrl?.trim(),
+    );
+  }
+
   // --- ADMIN METHODS ---
 
   /// Approve all pending teacher profiles (for testing/admin purposes)
@@ -523,4 +676,14 @@ class SupabaseService {
       return [];
     }
   }
+}
+
+class _AuthorData {
+  final String name;
+  final String? avatarUrl;
+
+  const _AuthorData({
+    required this.name,
+    required this.avatarUrl,
+  });
 }

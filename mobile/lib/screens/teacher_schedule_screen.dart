@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
+import '../features/common/stub_helper.dart';
+import '../widgets/coming_soon_action.dart';
 
 class TeacherScheduleScreen extends StatefulWidget {
   const TeacherScheduleScreen({super.key});
@@ -491,56 +492,29 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Đã thêm khung giờ!',
-                          style: GoogleFonts.inter(color: textDark),
-                        ),
-                        backgroundColor: const Color(0xFFD4AF37),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(
-                    'Thêm khung giờ',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD4AF37),
-                    side: const BorderSide(color: Color(0xFFD4AF37)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                child: ComingSoonAction(
+                  icon: Icons.add_rounded,
+                  label: 'Thêm khung giờ',
+                  title: 'Thêm khung giờ',
+                  description:
+                      'Tính năng thêm khung giờ và đồng bộ lên hệ thống sẽ có trong bản sau.',
+                  presentation: StubPresentation.bottomSheet,
+                  backgroundColor: Colors.transparent,
+                  borderColor: const Color(0xFFD4AF37),
+                  foregroundColor: const Color(0xFFD4AF37),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Đã chặn lịch!',
-                          style: GoogleFonts.inter(color: textDark),
-                        ),
-                        backgroundColor: Colors.grey,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.block, size: 18),
-                  label: Text(
-                    'Chặn lịch',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey,
-                    side: const BorderSide(color: Colors.grey),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                child: DisabledAction(
+                  icon: Icons.block_rounded,
+                  label: 'Chặn lịch',
+                  title: 'Chặn lịch',
+                  description:
+                      'Tính năng chặn lịch theo ngày và theo khung giờ sẽ có trong bản sau.',
+                  presentation: StubPresentation.bottomSheet,
                 ),
               ),
             ],
@@ -550,17 +524,12 @@ class _TeacherScheduleScreenState extends State<TeacherScheduleScreen> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '✓ Đã lưu lịch thành công!',
-                      style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.w600),
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
+              onPressed: () => openStub(
+                context,
+                'Lưu lịch dạy',
+                'Tính năng lưu lịch lên hệ thống và đồng bộ realtime sẽ có trong bản sau.',
+                icon: Icons.save_outlined,
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
                 foregroundColor: Colors.black,
@@ -724,5 +693,3 @@ enum ScheduleSlotType {
   offline,
   blocked,
 }
-
-

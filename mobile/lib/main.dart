@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,10 @@ import 'screens/profile_screen.dart';
 import 'screens/piano_rental_screen.dart';
 import 'screens/piano_detail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/teacher_public_profile_screen.dart';
+import 'features/comments/comment_sheet.dart';
+import 'features/comments/comments_repository.dart';
+import 'features/comments/supabase_comments_repository.dart';
 import 'widgets/feed_media_item.dart';
 import 'widgets/login_bottom_sheet.dart'; // Import Login Sheet
 
@@ -79,6 +84,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   static const Color backgroundLight = Color(0xFFFFFFFF);
 
   final SupabaseService _supabaseService = SupabaseService();
+  final CommentsRepository _commentRepository = SupabaseCommentsRepository();
   final PageController _pageController = PageController(keepPage: true);
   final List<FeedItem> _feedItems = [];
   FeedCursor? _nextCursor;
@@ -91,9 +97,22 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   bool _isHoldingToPause = false;
   int? _manuallyPausedItemId;
   int? _heartAnimatingItemId;
+  IconData? _playbackFeedbackIcon;
+  int? _playbackFeedbackItemId;
   final Set<int> _likedFeedIds = {};
+  final Set<int> _savedFeedIds = {};
+  final Set<int> _saveAnimatingFeedIds = {};
   final Set<int> _likeRequestsInFlight = {};
   final Map<int, int> _likeCountOverrides = {};
+  final Map<int, int> _commentCountOverrides = {};
+  Timer? _playbackFeedbackTimer;
+
+  DateTime? _lastTapDownAt;
+  Offset? _lastTapDownPosition;
+  int? _lastTapDownItemId;
+  int? _pendingTapToggleItemId;
+  bool _pendingTapToggleWasPaused = false;
+  DateTime? _pendingTapToggleAt;
 
   static const int _feedPageSize = 12;
   int _selectedIndex = 0;
@@ -123,8 +142,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       _hasMoreFeed = true;
       _feedError = null;
       _currentFeedIndex = 0;
-      _isHoldingToPause = false;
-      _manuallyPausedItemId = null;
+      _resetPlaybackState();
       _nextCursor = null;
       _feedItems.clear();
     });
@@ -187,6 +205,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _playbackFeedbackTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -197,8 +216,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     setState(() {
       _appLifecycleState = state;
       if (state != AppLifecycleState.resumed) {
-        _isHoldingToPause = false;
-        _manuallyPausedItemId = null;
+        _resetPlaybackState();
       }
     });
   }
@@ -212,8 +230,78 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     return _likeCountOverrides[item.id] ?? item.likesCount;
   }
 
+  int _effectiveCommentsCount(FeedItem item) {
+    return _commentCountOverrides[item.id] ?? item.commentsCount;
+  }
+
   bool _isItemLiked(FeedItem item) {
     return _likedFeedIds.contains(item.id);
+  }
+
+  bool _isItemSaved(FeedItem item) {
+    return _savedFeedIds.contains(item.id);
+  }
+
+  void _resetPlaybackState() {
+    _playbackFeedbackTimer?.cancel();
+    _isHoldingToPause = false;
+    _manuallyPausedItemId = null;
+    _playbackFeedbackIcon = null;
+    _playbackFeedbackItemId = null;
+    _lastTapDownAt = null;
+    _lastTapDownPosition = null;
+    _lastTapDownItemId = null;
+    _clearPendingTapToggle();
+  }
+
+  void _clearPendingTapToggle() {
+    _pendingTapToggleItemId = null;
+    _pendingTapToggleWasPaused = false;
+    _pendingTapToggleAt = null;
+  }
+
+  bool _isDoubleTapCandidate(int itemId, Offset position, DateTime now) {
+    final lastAt = _lastTapDownAt;
+    final lastPos = _lastTapDownPosition;
+    final lastItemId = _lastTapDownItemId;
+    if (lastAt == null || lastPos == null || lastItemId == null) return false;
+    if (lastItemId != itemId) return false;
+
+    final withinTime =
+        now.difference(lastAt) <= const Duration(milliseconds: 260);
+    final withinDistance = (position - lastPos).distance <= 52;
+    return withinTime && withinDistance;
+  }
+
+  void _rememberTapDown(int itemId, Offset position, DateTime now) {
+    _lastTapDownAt = now;
+    _lastTapDownPosition = position;
+    _lastTapDownItemId = itemId;
+  }
+
+  void _clearTapDownHistory() {
+    _lastTapDownAt = null;
+    _lastTapDownPosition = null;
+    _lastTapDownItemId = null;
+  }
+
+  void _showPlaybackFeedback({
+    required int feedId,
+    required bool paused,
+  }) {
+    _playbackFeedbackTimer?.cancel();
+    setState(() {
+      _playbackFeedbackItemId = feedId;
+      _playbackFeedbackIcon = paused ? Icons.pause : Icons.play_arrow;
+    });
+
+    _playbackFeedbackTimer = Timer(const Duration(milliseconds: 240), () {
+      if (!mounted || _playbackFeedbackItemId != feedId) return;
+      setState(() {
+        _playbackFeedbackItemId = null;
+        _playbackFeedbackIcon = null;
+      });
+    });
   }
 
   bool _shouldPlayItemVideo(FeedItem item, int index) {
@@ -235,16 +323,45 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     return keepCurrentWarm || preloadNext;
   }
 
-  void _onFeedTap(FeedItem item, int index) {
-    if (!_isFeedPlaybackActive || !item.isVideo || index != _currentFeedIndex) {
+  void _onFeedTapDown(
+    FeedItem item,
+    int index,
+    TapDownDetails details,
+  ) {
+    if (index != _currentFeedIndex) return;
+
+    final now = DateTime.now();
+    if (_pendingTapToggleAt != null &&
+        now.difference(_pendingTapToggleAt!) >
+            const Duration(milliseconds: 420)) {
+      _clearPendingTapToggle();
+    }
+    final isDoubleTap =
+        _isDoubleTapCandidate(item.id, details.localPosition, now);
+
+    if (isDoubleTap) {
+      _clearTapDownHistory();
+      _handleDoubleTapLike(item, index);
       return;
     }
 
+    _rememberTapDown(item.id, details.localPosition, now);
+
+    if (!_isFeedPlaybackActive || !item.isVideo) return;
+
+    final wasPaused = _manuallyPausedItemId == item.id;
     setState(() {
       _isHoldingToPause = false;
-      _manuallyPausedItemId =
-          (_manuallyPausedItemId == item.id) ? null : item.id;
+      _manuallyPausedItemId = wasPaused ? null : item.id;
+      _pendingTapToggleItemId = item.id;
+      _pendingTapToggleWasPaused = wasPaused;
+      _pendingTapToggleAt = now;
     });
+
+    _showPlaybackFeedback(
+      feedId: item.id,
+      paused: !wasPaused,
+    );
   }
 
   void _onFeedLongPressStart(
@@ -256,7 +373,13 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       return;
     }
     setState(() {
+      if (_pendingTapToggleItemId == item.id) {
+        _manuallyPausedItemId = _pendingTapToggleWasPaused ? item.id : null;
+        _clearPendingTapToggle();
+      }
       _isHoldingToPause = true;
+      _playbackFeedbackItemId = null;
+      _playbackFeedbackIcon = null;
     });
   }
 
@@ -270,6 +393,31 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     }
     setState(() {
       _isHoldingToPause = false;
+    });
+  }
+
+  void _handleDoubleTapLike(FeedItem item, int index) {
+    if (index != _currentFeedIndex) return;
+
+    // If first tap was already applied as pause/play, restore original playback
+    // so double-tap like doesn't feel like a delayed/toggling tap action.
+    final pendingAt = _pendingTapToggleAt;
+    final shouldRestore = _pendingTapToggleItemId == item.id &&
+        pendingAt != null &&
+        DateTime.now().difference(pendingAt) <=
+            const Duration(milliseconds: 420);
+
+    if (shouldRestore) {
+      setState(() {
+        _manuallyPausedItemId = _pendingTapToggleWasPaused ? item.id : null;
+        _clearPendingTapToggle();
+      });
+    }
+    _clearPendingTapToggle();
+
+    _showHeartAnimation(item.id);
+    _checkLogin(() {
+      _submitLikeOptimistic(item);
     });
   }
 
@@ -316,12 +464,170 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     });
   }
 
-  void _onFeedDoubleTap(FeedItem item, int index) {
-    if (index != _currentFeedIndex) return;
-    _showHeartAnimation(item.id);
+  void _openTeacherPublicProfile(FeedItem item) {
     _checkLogin(() {
-      _submitLikeOptimistic(item);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TeacherPublicProfileScreen(
+            teacherName: item.authorName,
+            teacherAvatar:
+                item.authorAvatar.isNotEmpty ? item.authorAvatar : null,
+          ),
+        ),
+      );
     });
+  }
+
+  Future<void> _openCommentSheet(FeedItem item) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (_) => CommentSheet(
+        feedItemId: item.dbId,
+        initialCount: _effectiveCommentsCount(item),
+        repository: _commentRepository,
+        onCountChanged: (count) {
+          if (!mounted) return;
+          setState(() {
+            _commentCountOverrides[item.id] = count;
+          });
+        },
+      ),
+    );
+  }
+
+  void _toggleSave(FeedItem item) {
+    final id = item.id;
+    setState(() {
+      if (_savedFeedIds.contains(id)) {
+        _savedFeedIds.remove(id);
+      } else {
+        _savedFeedIds.add(id);
+      }
+      _saveAnimatingFeedIds.add(id);
+    });
+
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+      setState(() {
+        _saveAnimatingFeedIds.remove(id);
+      });
+    });
+  }
+
+  void _openShareSheet(FeedItem item) {
+    final targetUrl = item.videoUrl ?? item.mediaUrl;
+    final shareText = '${item.caption}\n$targetUrl';
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1D5DB),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Chia sẻ',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    shareText,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF374151),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(this.context);
+
+                          Clipboard.setData(ClipboardData(text: shareText))
+                              .then((_) {
+                            if (!mounted) return;
+                            navigator.pop();
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Da copy noi dung chia se'),
+                              ),
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.copy, size: 18),
+                        label: const Text('Copy'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF111827),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF111827),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Đóng'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildHeartOverlay(FeedItem item) {
@@ -394,6 +700,46 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     );
   }
 
+  Widget _buildPlaybackFeedbackOverlay(FeedItem item, int index) {
+    final visible = _playbackFeedbackItemId == item.id &&
+        index == _currentFeedIndex &&
+        _isFeedPlaybackActive &&
+        _playbackFeedbackIcon != null;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: const Duration(milliseconds: 90),
+            child: AnimatedScale(
+              scale: visible ? 1 : 0.86,
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              child: Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.5),
+                    width: 1.1,
+                  ),
+                ),
+                child: Icon(
+                  _playbackFeedbackIcon,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // Helper to check login before action
   void _checkLogin(VoidCallback action) {
     if (_isGuest) {
@@ -432,7 +778,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
               const PianoRentalScreen(),
 
               // 2: Add - Create Video
-              const CreateVideoScreen(),
+              CreateVideoScreen(
+                onVideoPosted: _handleVideoPostedFromCreateTab,
+              ),
 
               // 3: Message
               const MessagesScreen(),
@@ -503,8 +851,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
         if (index < _feedItems.length) {
           setState(() {
             _currentFeedIndex = index;
-            _isHoldingToPause = false;
-            _manuallyPausedItemId = null;
+            _resetPlaybackState();
           });
           _loadMoreFeedIfNeeded(index);
         } else if (_hasMoreFeed) {
@@ -625,15 +972,15 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
           ),
           Positioned.fill(
             child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => _onFeedTap(item, index),
-              onDoubleTap: () => _onFeedDoubleTap(item, index),
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) => _onFeedTapDown(item, index, details),
               onLongPressStart: (details) =>
                   _onFeedLongPressStart(item, index, details),
               onLongPressEnd: (details) =>
                   _onFeedLongPressEnd(item, index, details),
             ),
           ),
+          _buildPlaybackFeedbackOverlay(item, index),
           _buildPauseOverlay(item, index),
           _buildHeartOverlay(item),
           Positioned(
@@ -641,23 +988,25 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
             right: 0,
             bottom: 0,
             height: 400,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.8),
-                  ],
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.8),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
           // Top Verified Badge (if user is verified)
-          if (item.isVerified) _buildTopUserBadge(item),
+          if (item.isVerified) IgnorePointer(child: _buildTopUserBadge(item)),
 
           // Right Sidebar
           _buildRightSidebar(
@@ -766,65 +1115,68 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Creator Avatar with Add Button
-                SizedBox(
-                  width: 40,
-                  height: 48,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
-                        ),
-                        child: ClipOval(
-                          child: Image.network(
-                            item.authorAvatar.isNotEmpty
-                                ? item.authorAvatar
-                                : 'https://via.placeholder.com/150',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey,
-                                child: const Icon(Icons.person,
-                                    color: Colors.white),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 10,
-                        child: GestureDetector(
-                          onTap: () => _checkLogin(() {}),
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1.5,
-                              ),
+                GestureDetector(
+                  onTap: () => _openTeacherPublicProfile(item),
+                  child: SizedBox(
+                    width: 40,
+                    height: 48,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 10,
-                              ),
+                          ),
+                          child: ClipOval(
+                            child: Image.network(
+                              item.authorAvatar.isNotEmpty
+                                  ? item.authorAvatar
+                                  : 'https://via.placeholder.com/150',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey,
+                                  child: const Icon(Icons.person,
+                                      color: Colors.white),
+                                );
+                              },
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        Positioned(
+                          bottom: 0,
+                          left: 10,
+                          child: GestureDetector(
+                            onTap: () => _openTeacherPublicProfile(item),
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -842,28 +1194,35 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
                 const SizedBox(height: 24),
                 // Comment Button
                 GestureDetector(
-                  onTap: () => _checkLogin(() {}),
+                  onTap: () => _openCommentSheet(item),
                   child: _buildSidebarAction(
                     icon: Icons.chat_bubble_outline,
-                    label: item.formattedComments,
+                    label: item.formatCount(_effectiveCommentsCount(item)),
                   ),
                 ),
                 const SizedBox(height: 24),
                 // Bookmark Button
                 GestureDetector(
-                  onTap: () => _checkLogin(() {}),
+                  onTap: () => _toggleSave(item),
                   child: _buildSidebarAction(
-                    icon: Icons.bookmark_border,
-                    label: item.formattedShares,
+                    icon: _isItemSaved(item)
+                        ? Icons.bookmark
+                        : Icons.bookmark_border,
+                    iconColor: _isItemSaved(item) ? primaryGold : Colors.white,
+                    label: '',
+                    iconScale:
+                        _saveAnimatingFeedIds.contains(item.id) ? 1.18 : 1.0,
+                    iconOpacity:
+                        _saveAnimatingFeedIds.contains(item.id) ? 0.88 : 1.0,
                   ),
                 ),
                 const SizedBox(height: 24),
                 // Share Button
                 GestureDetector(
-                  onTap: () => _checkLogin(() {}),
+                  onTap: () => _openShareSheet(item),
                   child: _buildSidebarAction(
                     icon: Icons.reply,
-                    label: '',
+                    label: item.formattedShares,
                   ),
                 ),
               ],
@@ -878,21 +1237,32 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     required IconData icon,
     required String label,
     Color iconColor = Colors.white,
+    double iconScale = 1.0,
+    double iconOpacity = 1.0,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: iconColor,
-          size: 30,
-          shadows: [
-            Shadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+        AnimatedScale(
+          scale: iconScale,
+          duration: const Duration(milliseconds: 170),
+          curve: Curves.easeOutBack,
+          child: AnimatedOpacity(
+            opacity: iconOpacity,
+            duration: const Duration(milliseconds: 170),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 30,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         if (label.isNotEmpty) ...[
           const SizedBox(height: 4),
@@ -1201,11 +1571,23 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     if (_selectedIndex == nextIndex) return;
     setState(() {
       if (_selectedIndex == 0 && nextIndex != 0) {
-        _isHoldingToPause = false;
-        _manuallyPausedItemId = null;
+        _resetPlaybackState();
       }
       _selectedIndex = nextIndex;
     });
+  }
+
+  void _handleVideoPostedFromCreateTab() {
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 0;
+      _currentFeedIndex = 0;
+      _resetPlaybackState();
+    });
+    _loadInitialFeed();
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
   }
 
   // Custom Bottom Navigation

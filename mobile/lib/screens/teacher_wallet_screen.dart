@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../features/common/stub_helper.dart';
 
 class TeacherWalletScreen extends StatefulWidget {
   const TeacherWalletScreen({Key? key}) : super(key: key);
@@ -489,11 +490,12 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Xem tất cả giao dịch')),
-                );
-              },
+              onPressed: () => openStub(
+                context,
+                'Lịch sử giao dịch',
+                'Danh sách giao dịch đầy đủ sẽ được bổ sung ở bản tiếp theo.',
+                icon: Icons.receipt_long_outlined,
+              ),
               child: Text(
                 'Xem tất cả',
                 style: GoogleFonts.inter(
@@ -791,15 +793,13 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                       periodLabel =
                           '${range.start.day.toString().padLeft(2, '0')}/${range.start.month.toString().padLeft(2, '0')} - ${range.end.day.toString().padLeft(2, '0')}/${range.end.month.toString().padLeft(2, '0')}';
                     }
-                    Navigator.pop(sheetContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Đang xuất báo cáo $selectedFormat ($periodLabel)',
-                          style: GoogleFonts.inter(),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                    if (!mounted) return;
+                    Navigator.of(context).pop();
+                    openStub(
+                      context,
+                      'Xuất báo cáo doanh thu',
+                      'Tính năng xuất file $selectedFormat ($periodLabel) sẽ được kết nối backend ở bản tiếp theo.',
+                      icon: Icons.file_download_outlined,
                     );
                   },
                   icon: const Icon(Icons.file_download_outlined, size: 18),

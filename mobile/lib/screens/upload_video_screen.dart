@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import '../services/supabase_service.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   final String? videoPath;
@@ -26,8 +28,13 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _hashtagController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  final SupabaseService _supabaseService = SupabaseService();
 
   bool _affiliateLinkEnabled = true;
+  bool _isPosting = false;
+  String? _selectedVideoPath;
+  String? _postErrorMessage;
   String _selectedGoal = 'Học ngay (Booking giáo viên)';
   String _selectedTeacher = 'Cô Linh - 4.9*';
 
@@ -39,6 +46,12 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     '#beginner',
     '#piano',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedVideoPath = widget.videoPath;
+  }
 
   @override
   void dispose() {
@@ -175,13 +188,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
             children: [
               Container(
                 color: cardAlt,
-                child: widget.videoPath != null
-                    ? Image.network(
-                        'https://picsum.photos/800/450?random=piano',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
+                child: _buildVideoPreviewContent(),
               ),
               Center(
                 child: Container(
@@ -225,6 +232,79 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   ),
                 ),
               ),
+              Positioned(
+                left: 12,
+                bottom: 12,
+                child: GestureDetector(
+                  onTap: _pickVideoFromGallery,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _selectedVideoPath == null
+                          ? 'Chọn MP4'
+                          : 'Đổi video',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPreviewContent() {
+    if (_selectedVideoPath == null || _selectedVideoPath!.trim().isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    final normalizedPath = _selectedVideoPath!.replaceAll('\\', '/');
+    final fileName = normalizedPath.split('/').last;
+
+    return Container(
+      color: const Color(0xFF0B0F14),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.movie_creation_outlined,
+                size: 62,
+                color: Color(0xFFD4AF37),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                fileName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'MP4 ready to upload',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+              ),
             ],
           ),
         ),
@@ -240,7 +320,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           Icon(Icons.videocam_outlined, size: 64, color: Colors.grey[500]),
           const SizedBox(height: 16),
           Text(
-            'Video preview',
+            'Xem trước video',
             style: GoogleFonts.inter(fontSize: 14, color: textMuted),
           ),
         ],
@@ -535,8 +615,28 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_postErrorMessage != null) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.withOpacity(0.25)),
+              ),
+              child: Text(
+                _postErrorMessage!,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red[700],
+                ),
+              ),
+            ),
+          ],
           GestureDetector(
-            onTap: _handlePost,
+            onTap: _isPosting ? null : _handlePost,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -560,7 +660,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 ],
               ),
               child: Text(
-                'Đăng',
+                _isPosting ? 'Đang đăng...' : 'Đăng',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -595,12 +695,11 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     );
   }
 
-  void _handlePost() {
+  Future<void> _handlePost() async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('Vui lòng nhập tiêu đề video', style: GoogleFonts.inter()),
+          content: Text('Vui lòng nhập tiêu đề', style: GoogleFonts.inter()),
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
         ),
@@ -608,77 +707,139 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: cardLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: primaryGold.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle, color: darkGold, size: 48),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Video đang xử lý',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: textDark,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Video của bạn sẽ hiển thị trên feed sau khi được xử lý (thường 5-10 phút).',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: textMuted,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: primaryGold,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Về trang chủ',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
+    if (_selectedVideoPath == null || _selectedVideoPath!.trim().isEmpty) {
+      await _pickVideoFromGallery();
+      if (_selectedVideoPath == null || _selectedVideoPath!.trim().isEmpty) {
+        return;
+      }
+    }
+
+    setState(() {
+      _isPosting = true;
+      _postErrorMessage = null;
+    });
+
+    try {
+      final userId = _supabaseService.currentUser?.id;
+      if (userId == null) {
+        throw Exception('Bạn cần đăng nhập trước khi đăng video');
+      }
+
+      final safeTitle = _titleController.text
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+          .replaceAll(RegExp(r'^-|-$'), '');
+      final fileNamePart = safeTitle.isEmpty ? 'video' : safeTitle;
+      final destPath =
+          'test/$userId/${DateTime.now().millisecondsSinceEpoch}_$fileNamePart.mp4';
+
+      final mediaUrl = await _supabaseService.uploadVideoToStorage(
+        filePath: _selectedVideoPath!,
+        destPath: destPath,
+      );
+
+      await _supabaseService.createSocialFeedPost(
+        caption: _titleController.text.trim(),
+        mediaUrl: mediaUrl,
+        mediaType: 'video',
+        hashtags: _extractHashtags(_hashtagController.text),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Đăng video thành công!', style: GoogleFonts.inter()),
+          backgroundColor: Colors.green[600],
+          behavior: SnackBarBehavior.floating,
         ),
-      ),
-    );
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _postErrorMessage = _buildPostErrorMessage(e);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_postErrorMessage!, style: GoogleFonts.inter()),
+          backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPosting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickVideoFromGallery() async {
+    try {
+      final picked = await _picker.pickVideo(source: ImageSource.gallery);
+      if (picked == null) return;
+
+      final normalizedPath = picked.path.toLowerCase();
+      if (!normalizedPath.endsWith('.mp4')) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Hiện tại chỉ hỗ trợ tệp .mp4', style: GoogleFonts.inter()),
+            backgroundColor: Colors.orange[700],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _selectedVideoPath = picked.path;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể chọn video: $e', style: GoogleFonts.inter()),
+          backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  String _buildPostErrorMessage(Object error) {
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+    if (lower.contains('row-level security') ||
+        lower.contains('unauthorized') ||
+        lower.contains('statuscode:403')) {
+      return 'Upload bị chặn bởi policy (RLS 403). '
+          'Hãy chạy lại social_feed_video_upload_setup.sql và đăng nhập lại tài khoản.';
+    }
+    return 'Đăng video thất bại: $raw';
+  }
+
+  List<String> _extractHashtags(String raw) {
+    return raw
+        .split(RegExp(r'\s+'))
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .map((tag) => tag.replaceAll('#', ''))
+        .map((tag) => tag.toLowerCase())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .toList();
   }
 
   void _showGoalPicker() {
     final goals = [
       'Học ngay (Booking giáo viên)',
-      'Mượn đàn',
+      'Muốn đàn',
       'Xem để giải trí',
       'Không gắn mục tiêu',
     ];
@@ -703,7 +864,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     final teachers = [
       'Cô Linh - 4.9*',
       'Thầy Minh - 4.8*',
-      'Cô Hằng - 4.7*',
+      'Cô Hồng - 4.7*',
       'Không chọn giáo viên',
     ];
 

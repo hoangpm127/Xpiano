@@ -5,7 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'upload_video_screen.dart';
 
 class CreateVideoScreen extends StatefulWidget {
-  const CreateVideoScreen({super.key});
+  final VoidCallback? onVideoPosted;
+
+  const CreateVideoScreen({
+    super.key,
+    this.onVideoPosted,
+  });
 
   @override
   State<CreateVideoScreen> createState() => _CreateVideoScreenState();
@@ -463,13 +468,16 @@ class _CreateVideoScreenState extends State<CreateVideoScreen> {
     );
   }
 
-  void _openUploadVideo() {
-    Navigator.push(
+  Future<void> _openUploadVideo() async {
+    final posted = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => const UploadVideoScreen(videoPath: null),
       ),
     );
+    if (posted == true) {
+      widget.onVideoPosted?.call();
+    }
   }
 
   void _showHelpDialog() {

@@ -1,10 +1,12 @@
 class FeedItem {
   final int id;
+  final String dbId;
   final DateTime createdAt;
   final String authorName;
   final String authorAvatar;
   final String caption;
   final String mediaUrl;
+  final String mediaType;
   final String? videoUrl;
   final String? thumbUrl;
   final int likesCount;
@@ -18,11 +20,13 @@ class FeedItem {
 
   FeedItem({
     required this.id,
+    required this.dbId,
     required this.createdAt,
     required this.authorName,
     required this.authorAvatar,
     required this.caption,
     required this.mediaUrl,
+    this.mediaType = 'image',
     this.videoUrl,
     this.thumbUrl,
     required this.likesCount,
@@ -39,23 +43,31 @@ class FeedItem {
     final rawMediaUrl = (json['media_url'] as String?)?.trim() ?? '';
     final rawVideoUrl = (json['video_url'] as String?)?.trim();
     final rawThumbUrl = (json['thumb_url'] as String?)?.trim();
+    final rawMediaType = (json['media_type'] as String?)?.trim().toLowerCase();
+    final normalizedMediaType = (rawMediaType == null || rawMediaType.isEmpty)
+        ? (_looksLikeVideo(rawMediaUrl) ? 'video' : 'image')
+        : rawMediaType;
 
     final resolvedVideoUrl = (rawVideoUrl != null && rawVideoUrl.isNotEmpty)
         ? rawVideoUrl
-        : (_looksLikeVideo(rawMediaUrl) ? rawMediaUrl : null);
+        : ((normalizedMediaType == 'video' || _looksLikeVideo(rawMediaUrl))
+            ? rawMediaUrl
+            : null);
 
     final resolvedThumbUrl = (rawThumbUrl != null && rawThumbUrl.isNotEmpty)
         ? rawThumbUrl
         : (resolvedVideoUrl == null ? rawMediaUrl : null);
 
     return FeedItem(
-      id: json['id'] as int,
+      id: _parseFeedId(json['id']),
+      dbId: _parseFeedDbId(json['id']),
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       authorName: json['author_name'] as String? ?? 'Unknown',
       authorAvatar: json['author_avatar'] as String? ?? '',
       caption: json['caption'] as String? ?? '',
       mediaUrl: rawMediaUrl,
+      mediaType: normalizedMediaType,
       videoUrl: resolvedVideoUrl,
       thumbUrl: resolvedThumbUrl,
       likesCount: json['likes_count'] as int? ?? 0,
@@ -74,11 +86,13 @@ class FeedItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'db_id': dbId,
       'created_at': createdAt.toIso8601String(),
       'author_name': authorName,
       'author_avatar': authorAvatar,
       'caption': caption,
       'media_url': mediaUrl,
+      'media_type': mediaType,
       'video_url': videoUrl,
       'thumb_url': thumbUrl,
       'likes_count': likesCount,
@@ -107,6 +121,22 @@ class FeedItem {
   String get formattedShares => formatCount(sharesCount);
 
   bool get isVideo => videoUrl != null && videoUrl!.isNotEmpty;
+
+  static int _parseFeedId(dynamic rawId) {
+    if (rawId is int) return rawId;
+    if (rawId is String) {
+      final parsed = int.tryParse(rawId.trim());
+      if (parsed != null) return parsed;
+      return rawId.hashCode.abs();
+    }
+    return 0;
+  }
+
+  static String _parseFeedDbId(dynamic rawId) {
+    final value = rawId?.toString().trim() ?? '';
+    if (value.isNotEmpty) return value;
+    return '0';
+  }
 
   static bool _looksLikeVideo(String url) {
     final lowerUrl = url.toLowerCase();

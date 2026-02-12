@@ -13,6 +13,7 @@ import 'teacher_public_profile_screen.dart';
 import 'affiliate_dashboard_screen.dart';
 import 'account_settings_screen.dart';
 import 'notifications_list_screen.dart';
+import '../features/common/stub_helper.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -647,7 +648,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () => openStub(
+                context,
+                'Chi tiết buổi học',
+                'Tính năng xem chi tiết buổi học sẽ có trong bản sau.',
+                icon: Icons.menu_book_rounded,
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
                 foregroundColor: Colors.black,
@@ -722,7 +728,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: () => openStub(
+                context,
+                'Danh sách yêu cầu',
+                'Danh sách yêu cầu đầy đủ sẽ có trong bản sau.',
+                icon: Icons.group_add_rounded,
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFD4AF37)),
                 foregroundColor: const Color(0xFFD4AF37),
