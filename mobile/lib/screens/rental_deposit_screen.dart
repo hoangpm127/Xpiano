@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../features/profile/require_contact_info.dart';
 import '../models/piano.dart';
 import '../services/supabase_service.dart';
 
@@ -161,6 +162,14 @@ class _RentalDepositScreenState extends State<RentalDepositScreen> {
       return;
     }
 
+    await requireContactInfo(
+      context,
+      service: _supabaseService,
+      onOk: _submitRentalAtomic,
+    );
+  }
+
+  Future<void> _submitRentalAtomic() async {
     setState(() => _isSubmitting = true);
     try {
       await _supabaseService.createRentalAtomic(

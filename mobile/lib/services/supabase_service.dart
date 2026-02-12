@@ -32,6 +32,7 @@ class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
   bool? _socialFeedHasMediaTypeCache;
   bool? _socialFeedHasAuthorIdCache;
+  Map<String, dynamic>? _cachedProfile;
 
   // --- AUTH METHODS ---
 
@@ -39,10 +40,16 @@ class SupabaseService {
 
   Future<AuthResponse> signIn(
       {required String email, required String password}) async {
-    return await _client.auth.signInWithPassword(
+    final response = await _client.auth.signInWithPassword(
       email: email,
       password: password,
     );
+    try {
+      await ensureProfile();
+    } catch (_) {
+      // Keep login usable while migration is being applied.
+    }
+    return response;
   }
 
   // Check if email already exists using RPC function
@@ -66,26 +73,151 @@ class SupabaseService {
     required String fullName,
     required String role,
   }) async {
+    const normalizedRole = 'guest';
     // Sign up with email auto-confirm disabled (will be handled by OTP)
     final response = await _client.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': fullName, 'role': role},
+      data: {'full_name': fullName, 'role': normalizedRole},
       emailRedirectTo: null, // Disable email confirmation link
     );
 
+    try {
+      await ensureProfile();
+    } catch (_) {
+      // Profile bootstrap is handled by SQL migration trigger/RPC.
+    }
     return response;
   }
 
   Future<void> signOut() async {
     await _client.auth.signOut();
+    _cachedProfile = null;
   }
 
   Future<void> updateUserMetadata(
       {required String fullName, required String role}) async {
+    final normalizedRole = _normalizeRole(role);
     await _client.auth.updateUser(
-      UserAttributes(data: {'full_name': fullName, 'role': role}),
+      UserAttributes(data: {'full_name': fullName, 'role': normalizedRole}),
     );
+    _cachedProfile = null;
+  }
+
+  String _normalizeRole(String role) {
+    final value = role.trim().toLowerCase();
+    if (value == 'teacher') return 'teacher';
+    if (value == 'learner' || value == 'student') return 'learner';
+    return 'guest';
+  }
+
+  String _defaultStatusForRole(String role) {
+    switch (role) {
+      case 'teacher':
+        return 'teacher_pending';
+      case 'learner':
+        return 'learner_ready';
+      default:
+        return 'basic';
+    }
+  }
+
+  Future<Map<String, dynamic>> ensureProfile() async {
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final existing = await _client
+        .from('profiles')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+    if (existing != null) {
+      _cachedProfile = Map<String, dynamic>.from(existing);
+      return _cachedProfile!;
+    }
+
+    final role = _normalizeRole(user.userMetadata?['role']?.toString() ?? '');
+    final inserted = await _client
+        .from('profiles')
+        .insert({
+          'user_id': user.id,
+          'role': role,
+          'profile_status': _defaultStatusForRole(role),
+          'full_name': user.userMetadata?['full_name'],
+          'avatar_url': user.userMetadata?['avatar_url'],
+        })
+        .select()
+        .single();
+
+    _cachedProfile = Map<String, dynamic>.from(inserted);
+    return _cachedProfile!;
+  }
+
+  Future<Map<String, dynamic>> getMyProfile({bool refresh = false}) async {
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+    if (!refresh && _cachedProfile != null) {
+      return _cachedProfile!;
+    }
+
+    final profile = await _client
+        .from('profiles')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+    if (profile == null) {
+      return await ensureProfile();
+    }
+    _cachedProfile = Map<String, dynamic>.from(profile);
+    return _cachedProfile!;
+  }
+
+  Future<void> refreshProfileCache() async {
+    await getMyProfile(refresh: true);
+  }
+
+  bool profileHasContactInfo(Map<String, dynamic>? profile) {
+    if (profile == null) return false;
+    final phone = profile['phone']?.toString().trim() ?? '';
+    final address = profile['address_line']?.toString().trim() ?? '';
+    return phone.isNotEmpty && address.isNotEmpty;
+  }
+
+  Future<void> upsertContactInfo({
+    required String phone,
+    required String addressLine,
+    String? city,
+    String? district,
+  }) async {
+    await _client.rpc(
+      'upsert_contact_info',
+      params: {
+        'p_phone': phone,
+        'p_address_line': addressLine,
+        'p_city': city,
+        'p_district': district,
+      },
+    );
+    _cachedProfile = null;
+    await refreshProfileCache();
+  }
+
+  Future<String> upgradeRole(String role) async {
+    final normalizedRole = _normalizeRole(role);
+    if (normalizedRole == 'guest') {
+      throw Exception('Target role must be learner or teacher');
+    }
+    final result = await _client.rpc(
+      'upgrade_role',
+      params: {'p_role': normalizedRole},
+    );
+    _cachedProfile = null;
+    await refreshProfileCache();
+    return result?.toString() ?? normalizedRole;
   }
 
   // --- OTP METHODS ---
@@ -116,7 +248,7 @@ class SupabaseService {
     return await _client.auth.updateUser(
       UserAttributes(
         password: password,
-        data: {'full_name': fullName, 'role': role},
+        data: {'full_name': fullName, 'role': 'guest'},
       ),
     );
   }

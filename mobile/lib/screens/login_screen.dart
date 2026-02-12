@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/supabase_service.dart';
+
 import '../main.dart';
+import '../services/supabase_service.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,97 +18,64 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _supabaseService = SupabaseService();
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-  int _selectedRoleIndex = 0; // 0: Guest/Student, 1: Teacher
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
-      );
+      _showError('Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
     setState(() => _isLoading = true);
     try {
       await _supabaseService.signIn(email: email, password: password);
-      
-      // Verify Role
-      final user = Supabase.instance.client.auth.currentUser;
-      final userRole = user?.userMetadata?['role'] ?? 'student'; // Default to student if undefined
-      
-      // Check if role matches selected tab
-      // Tab 0: Student/Guest -> allows 'student'
-      // Tab 1: Teacher -> allows 'teacher'
-      
-      bool isRoleValid = false;
-      if (_selectedRoleIndex == 0) {
-        if (userRole == 'student') isRoleValid = true;
-      } else {
-        if (userRole == 'teacher') isRoleValid = true;
-      }
 
-      if (!isRoleValid) {
-        // Logout immediately if role mismatch
-        await _supabaseService.signOut();
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Tài khoản này không phải là ${_selectedRoleIndex == 0 ? 'Học viên' : 'Giáo viên'}. Vui lòng chọn đúng tab và đăng nhập lại!'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
+      // Warm cache để Profile tab render đúng role ngay lần mở đầu.
+      try {
+        await _supabaseService.getMyProfile(refresh: true);
+      } catch (_) {}
 
-      // Ensure widget is still mounted before navigating
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
-        );
-      }
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PianoFeedScreen()),
+      );
     } on AuthException catch (e) {
-      // Handle Supabase Auth specific errors
-      String errorMessage = 'Đăng nhập thất bại';
-      
-      if (e.message.contains('Invalid login credentials')) {
-        errorMessage = 'Email hoặc mật khẩu không đúng!';
-      } else if (e.message.contains('Email not confirmed')) {
-        errorMessage = 'Email chưa được xác nhận. Check hộp thư của bạn!';
-      } else if (e.message.contains('rate limit')) {
-        errorMessage = 'Quá nhiều yêu cầu. Vui lòng thử lại sau!';
-      } else {
-        errorMessage = 'Lỗi: ${e.message}';
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      _showError(_mapAuthError(e.message));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError('Lỗi: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _mapAuthError(String message) {
+    if (message.contains('Invalid login credentials')) {
+      return 'Email hoặc mật khẩu không đúng.';
+    }
+    if (message.contains('Email not confirmed')) {
+      return 'Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.';
+    }
+    if (message.toLowerCase().contains('rate limit')) {
+      return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.';
+    }
+    return 'Đăng nhập thất bại: $message';
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -115,31 +83,24 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF121212),
-          // Subtle texture effect using gradient to mimic depth 
+        decoration: const BoxDecoration(
+          color: Color(0xFF121212),
           gradient: RadialGradient(
             center: Alignment.topCenter,
             radius: 1.5,
-            colors: [
-              const Color(0xFF1E1E1E),
-              const Color(0xFF121212),
-            ],
+            colors: [Color(0xFF1E1E1E), Color(0xFF121212)],
           ),
         ),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 1. Header: Logo
                   Text(
                     'SPIANO',
                     style: GoogleFonts.inter(
-                      color: const Color(0xFFD4AF37), // Gold
+                      color: const Color(0xFFD4AF37),
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 4,
@@ -148,37 +109,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Học đàn & Cà phê',
-                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                    style:
+                        GoogleFonts.inter(color: Colors.white54, fontSize: 14),
                   ).animate().fadeIn(delay: 200.ms),
-                  
                   const SizedBox(height: 40),
-
-                  // 2. Role Switcher (Guest/Student vs Teacher)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      children: [
-                        _buildRoleTab('Khách/Học viên', 0),
-                        _buildRoleTab('Giáo viên', 1),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 300.ms),
-                  
-                  const SizedBox(height: 32),
-
-                  // 3. Input Form
                   _buildTextField(
                     controller: _emailController,
                     hint: 'Số điện thoại / Email',
                     icon: Icons.person_outline,
-                  ).animate().fadeIn(delay: 400.ms),
-                  
+                  ).animate().fadeIn(delay: 300.ms),
                   const SizedBox(height: 16),
-                  
                   _buildTextField(
                     controller: _passwordController,
                     hint: 'Mật khẩu',
@@ -186,139 +126,123 @@ class _LoginScreenState extends State<LoginScreen> {
                     isPassword: !_isPasswordVisible,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.white54,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      onPressed: () {
+                        setState(
+                            () => _isPasswordVisible = !_isPasswordVisible);
+                      },
                     ),
-                  ).animate().fadeIn(delay: 500.ms),
-                  
-                  // Secondary Links
+                  ).animate().fadeIn(delay: 400.ms),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                           onPressed: () {}, 
-                           style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                           child: Text(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Tính năng sẽ cập nhật sớm.')),
+                            );
+                          },
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                          child: Text(
                             'Quên mật khẩu?',
-                            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+                            style: GoogleFonts.inter(
+                                color: Colors.white54, fontSize: 13),
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Đăng nhập OTP sẽ cập nhật sớm.')),
+                            );
+                          },
                           style: TextButton.styleFrom(padding: EdgeInsets.zero),
                           child: Text(
                             'Đăng nhập bằng OTP',
-                            style: GoogleFonts.inter(color: const Color(0xFFD4AF37), fontSize: 13),
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFFD4AF37),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ).animate().fadeIn(delay: 600.ms),
-
+                  ).animate().fadeIn(delay: 500.ms),
                   const SizedBox(height: 12),
-
-                  // 4. Primary Action: Login Button
                   _buildPrimaryButton(
                     text: 'ĐĂNG NHẬP',
                     onPressed: _isLoading ? null : _handleLogin,
                     isLoading: _isLoading,
-                  ).animate().fadeIn(delay: 700.ms).scale(),
-
+                  ).animate().fadeIn(delay: 600.ms).scale(),
                   const SizedBox(height: 40),
-
-                  // 5. Footer: Social Login
                   Column(
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.white12)),
+                          const Expanded(child: Divider(color: Colors.white12)),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               'Hoặc đăng nhập bằng',
-                              style: GoogleFonts.inter(color: Colors.white38, fontSize: 12),
+                              style: GoogleFonts.inter(
+                                  color: Colors.white38, fontSize: 12),
                             ),
                           ),
-                          Expanded(child: Divider(color: Colors.white12)),
+                          const Expanded(child: Divider(color: Colors.white12)),
                         ],
                       ),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSocialIcon(Icons.g_mobiledata), // Google
+                          _buildSocialIcon(Icons.g_mobiledata),
                           const SizedBox(width: 24),
-                          _buildSocialIcon(Icons.apple), // Apple
+                          _buildSocialIcon(Icons.apple),
                           const SizedBox(width: 24),
-                          _buildSocialIcon(Icons.chat_bubble_outline), // Zalo
+                          _buildSocialIcon(Icons.chat_bubble_outline),
                         ],
                       ),
                     ],
-                  ).animate().fadeIn(delay: 800.ms),
-
+                  ).animate().fadeIn(delay: 700.ms),
                   const SizedBox(height: 40),
-
-                  // 6. Register Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         'Chưa có tài khoản? ',
-                        style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                        style: GoogleFonts.inter(
+                            color: Colors.white54, fontSize: 14),
                       ),
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const RegisterScreen()),
                           );
                         },
                         child: Text(
                           'Đăng ký',
                           style: GoogleFonts.inter(
-                            color: const Color(0xFFD4AF37), // Gold
+                            color: const Color(0xFFD4AF37),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(delay: 900.ms),
+                  ).animate().fadeIn(delay: 800.ms),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleTab(String title, int index) {
-    final isSelected = _selectedRoleIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedRoleIndex = index),
-        child: AnimatedContainer(
-          duration: 300.ms,
-          margin: const EdgeInsets.all(2),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF333333) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: isSelected ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5), width: 1) : null,
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              color: isSelected ? const Color(0xFFD4AF37) : Colors.white54,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 14,
             ),
           ),
         ),
@@ -344,7 +268,8 @@ class _LoginScreenState extends State<LoginScreen> {
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withOpacity(0.05),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
@@ -382,11 +307,13 @@ class _LoginScreenState extends State<LoginScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: onPressed,
         child: isLoading
-            ? const CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+            ? const CircularProgressIndicator(
+                color: Colors.black, strokeWidth: 2)
             : Text(
                 text,
                 style: GoogleFonts.inter(

@@ -6,6 +6,7 @@ import '../services/supabase_service.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'teacher_dashboard_screen.dart';
+import 'teacher_profile_setup_screen.dart';
 import 'admin_debug_screen.dart';
 import 'affiliate_dashboard_screen.dart';
 
@@ -32,6 +33,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _teacherProfile;
   bool _isTeacher = false;
+  String _currentRole = 'guest';
+  bool _isUpgradingRole = false;
   int _adminTapCount = 0;
 
   @override
@@ -39,25 +42,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _checkAuthAndFetch();
   }
-  
+
   void _checkAuthAndFetch() async {
     final user = _supabaseService.currentUser;
     if (user == null) {
       // User is guest, don't fetch bookings
       setState(() {
+        _currentRole = 'guest';
+        _isTeacher = false;
+        _teacherProfile = null;
         _isLoading = false;
       });
     } else {
+      try {
+        final profile = await _supabaseService.getMyProfile(refresh: true);
+        _currentRole =
+            (profile['role']?.toString().trim().toLowerCase() ?? 'guest');
+      } catch (_) {
+        _currentRole = 'guest';
+      }
+
       // Check if user is a teacher
       final teacherProfile = await _supabaseService.getTeacherProfile();
-      if (teacherProfile != null) {
+      if (_currentRole == 'teacher' || teacherProfile != null) {
         setState(() {
           _teacherProfile = teacherProfile;
           _isTeacher = true;
           _isLoading = false;
         });
       } else {
-        // Regular student user
+        // Regular guest/learner user
+        setState(() {
+          _isTeacher = false;
+          _teacherProfile = null;
+        });
         _fetchBookings();
       }
     }
@@ -80,8 +98,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardLight,
-        title: Text('Xác nhận hủy', style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold)),
-        content: Text('Bạn có chắc chắn muốn hủy lịch đặt này không?', style: GoogleFonts.inter(color: textMuted)),
+        title: Text('Xác nhận hủy',
+            style: GoogleFonts.inter(
+                color: textDark, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn hủy lịch đặt này không?',
+            style: GoogleFonts.inter(color: textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -89,7 +110,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Hủy Lịch', style: GoogleFonts.inter(color: Colors.redAccent)),
+            child: Text('Hủy Lịch',
+                style: GoogleFonts.inter(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -119,8 +141,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardLight,
-        title: Text('Đăng xuất', style: GoogleFonts.inter(color: textDark, fontWeight: FontWeight.bold)),
-        content: Text('Bạn có chắc chắn muốn đăng xuất?', style: GoogleFonts.inter(color: textMuted)),
+        title: Text('Đăng xuất',
+            style: GoogleFonts.inter(
+                color: textDark, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn đăng xuất?',
+            style: GoogleFonts.inter(color: textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -128,7 +153,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Đăng xuất', style: GoogleFonts.inter(color: Colors.redAccent)),
+            child: Text('Đăng xuất',
+                style: GoogleFonts.inter(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -145,10 +171,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _handleUpgradeRole(String targetRole) async {
+    if (_isUpgradingRole || _currentRole != 'guest') return;
+
+    setState(() => _isUpgradingRole = true);
+    try {
+      final upgradedRole = await _supabaseService.upgradeRole(targetRole);
+      if (!mounted) return;
+
+      setState(() => _currentRole = upgradedRole);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            upgradedRole == 'teacher'
+                ? 'Da nang cap Teacher. Vui long hoan tat ho so giao vien.'
+                : 'Da nang cap Learner thanh cong.',
+          ),
+        ),
+      );
+
+      if (upgradedRole == 'teacher') {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TeacherProfileSetupScreen(),
+          ),
+        );
+        if (mounted) {
+          _checkAuthAndFetch();
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString().toLowerCase();
+      final message = raw.contains('role_already_final')
+          ? 'Tai khoan da chot role, khong the doi tiep.'
+          : 'Nang cap role that bai: $e';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      _checkAuthAndFetch();
+    } finally {
+      if (mounted) {
+        setState(() => _isUpgradingRole = false);
+      }
+    }
+  }
+
+  Widget _buildRoleUpgradeCard() {
+    if (_currentRole != 'guest') return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Nang cap vai tro (1 lan duy nhat)',
+            style: GoogleFonts.inter(
+              color: textDark,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isUpgradingRole
+                      ? null
+                      : () => _handleUpgradeRole('learner'),
+                  child: Text(
+                    'Thanh Learner',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isUpgradingRole
+                      ? null
+                      : () => _handleUpgradeRole('teacher'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGold,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: _isUpgradingRole
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Thanh Teacher',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _supabaseService.currentUser;
-    
+
     // If loading, show loading indicator
     if (_isLoading) {
       return const Scaffold(
@@ -158,74 +294,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
-    
+
     // If user is a teacher with approved status, show full Teacher Dashboard
     if (_isTeacher && _teacherProfile?['verification_status'] == 'approved') {
       return const TeacherDashboardScreen();
     }
-    
+
     // Otherwise show normal profile screen with Scaffold
     return Scaffold(
       backgroundColor: backgroundLight,
       body: SafeArea(
-        child: user == null 
+        child: user == null
             ? _buildGuestView()
             : _isTeacher
                 ? _buildTeacherPendingOrRejected()
                 : Column(
-          children: [
-            // 1. Profile Header
-            _buildProfileHeader(),
-            
-            const SizedBox(height: 20),
-            
-            // 2. Section Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(Icons.history, color: primaryGold, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Lịch sử đặt đàn',
-                    style: GoogleFonts.inter(
-                      color: textDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // 3. Booking List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: primaryGold))
-                  : _bookings.isEmpty
-                      ? _buildEmptyState()
-                      : RefreshIndicator(
-                          onRefresh: _fetchBookings,
-                          color: primaryGold,
-                          backgroundColor: cardLight,
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _bookings.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 16),
-                            itemBuilder: (context, index) {
-                              return _buildBookingCard(_bookings[index]);
-                            },
-                          ),
+                    children: [
+                      // 1. Profile Header
+                      _buildProfileHeader(),
+
+                      _buildRoleUpgradeCard(),
+
+                      const SizedBox(height: 20),
+
+                      // 2. Section Title
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.history,
+                                color: primaryGold, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Lịch sử đặt đàn',
+                              style: GoogleFonts.inter(
+                                color: textDark,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-            ),
-          ],
-        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 3. Booking List
+                      Expanded(
+                        child: _isLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                    color: primaryGold))
+                            : _bookings.isEmpty
+                                ? _buildEmptyState()
+                                : RefreshIndicator(
+                                    onRefresh: _fetchBookings,
+                                    color: primaryGold,
+                                    backgroundColor: cardLight,
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: _bookings.length,
+                                      separatorBuilder: (context, index) =>
+                                          const SizedBox(height: 16),
+                                      itemBuilder: (context, index) {
+                                        return _buildBookingCard(
+                                            _bookings[index]);
+                                      },
+                                    ),
+                                  ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
-  
+
   Widget _buildGuestView() {
     return Center(
       child: Padding(
@@ -401,7 +544,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage('https://via.placeholder.com/150'), // Placeholder avatar
+            backgroundImage: NetworkImage(
+                'https://via.placeholder.com/150'), // Placeholder avatar
             backgroundColor: Colors.grey,
           ),
           const SizedBox(height: 12),
@@ -576,7 +720,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.calendar_today, size: 60, color: textMuted.withOpacity(0.3)),
+          Icon(Icons.calendar_today,
+              size: 60, color: textMuted.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
             'Chưa có lịch đặt nào',
@@ -613,12 +758,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         statusText = booking.status;
     }
 
-    final isCancelable = (booking.status == 'confirmed' || booking.status == 'pending') &&
-        booking.startTime.isAfter(DateTime.now());
+    final isCancelable =
+        (booking.status == 'confirmed' || booking.status == 'pending') &&
+            booking.startTime.isAfter(DateTime.now());
 
     final dateFormatter = DateFormat('dd/MM/yyyy');
     final timeFormatter = DateFormat('HH:mm');
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
     return Container(
       decoration: BoxDecoration(
@@ -639,15 +786,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 60,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                width: 60, height: 60,
+                width: 60,
+                height: 60,
                 color: cardAlt,
                 child: const Icon(Icons.music_note, color: textMuted),
               ),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Center: Details
           Expanded(
             child: Column(
@@ -683,7 +831,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          
+
           // Right: Status Badge & Cancel Action
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -730,8 +878,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Build Teacher Pending/Rejected Status View
   Widget _buildTeacherPendingOrRejected() {
-    final verificationStatus = _teacherProfile?['verification_status'] ?? 'pending';
-    
+    final verificationStatus =
+        _teacherProfile?['verification_status'] ?? 'pending';
+
     if (verificationStatus == 'pending') {
       return _buildPendingStatus();
     } else {
@@ -797,7 +946,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: cardLight,
                 foregroundColor: textMuted,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -813,8 +963,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildRejectedStatus() {
-    final rejectedReason = _teacherProfile?['rejected_reason'] ?? 'Không đủ điều kiện';
-    
+    final rejectedReason =
+        _teacherProfile?['rejected_reason'] ?? 'Không đủ điều kiện';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -880,7 +1031,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: cardLight,
                 foregroundColor: textMuted,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -895,7 +1047,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
-
-
-
