@@ -31,6 +31,7 @@ class FeedPageResult {
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
   bool? _socialFeedHasMediaTypeCache;
+  bool? _socialFeedHasAuthorIdCache;
 
   // --- AUTH METHODS ---
 
@@ -235,6 +236,21 @@ class SupabaseService {
     }
   }
 
+  Future<Map<String, dynamic>?> getTeacherProfileByUserId(String userId) async {
+    try {
+      final response = await _client
+          .from('teacher_profiles')
+          .select('user_id, full_name, avatar_url, bio')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      return response as Map<String, dynamic>?;
+    } catch (e) {
+      print('Error fetching teacher profile by user id: $e');
+      return null;
+    }
+  }
+
   // Get all approved teacher profiles
   Future<List<Map<String, dynamic>>> getApprovedTeachers() async {
     try {
@@ -322,6 +338,9 @@ class SupabaseService {
 
     if (await _socialFeedHasMediaTypeColumn()) {
       payload['media_type'] = mediaType;
+    }
+    if (await _socialFeedHasAuthorIdColumn()) {
+      payload['author_id'] = currentUser?.id;
     }
 
     try {
@@ -412,6 +431,116 @@ class SupabaseService {
     }
   }
 
+  Future<FeedPageResult> getFollowingFeedPage({
+    int limit = 12,
+    FeedCursor? cursor,
+  }) async {
+    final user = currentUser;
+    if (user == null) {
+      return const FeedPageResult(
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      );
+    }
+
+    if (!await _socialFeedHasAuthorIdColumn()) {
+      return const FeedPageResult(
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      );
+    }
+
+    try {
+      final followRows = await _client
+          .from('follows')
+          .select('followee_id')
+          .eq('follower_id', user.id);
+
+      final followeeIds = (followRows as List)
+          .map((row) =>
+              row is Map<String, dynamic> ? row['followee_id']?.toString() : '')
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toList();
+
+      if (followeeIds.isEmpty) {
+        return const FeedPageResult(
+          items: [],
+          nextCursor: null,
+          hasMore: false,
+        );
+      }
+
+      dynamic query = _client
+          .from('social_feed')
+          .select()
+          .inFilter('author_id', followeeIds)
+          .order('created_at', ascending: false)
+          .order('id', ascending: false)
+          .limit(limit);
+
+      if (cursor != null) {
+        final createdAtIso = cursor.createdAt.toUtc().toIso8601String();
+        query = query.or(
+          'created_at.lt.$createdAtIso,and(created_at.eq.$createdAtIso,id.lt.${cursor.id})',
+        );
+      }
+
+      final response = await query;
+      final items = (response as List)
+          .map((item) => FeedItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      final hasMore = items.length == limit;
+      FeedCursor? nextCursor;
+
+      if (hasMore && items.isNotEmpty) {
+        final last = items.last;
+        nextCursor = FeedCursor(createdAt: last.createdAt, id: last.id);
+      }
+
+      return FeedPageResult(
+        items: items,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+      );
+    } catch (e) {
+      print('Error fetching following feed page: $e');
+      return const FeedPageResult(
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      );
+    }
+  }
+
+  Future<List<FeedItem>> getCreatorFeedItems({
+    required String authorId,
+    int limit = 30,
+  }) async {
+    if (!await _socialFeedHasAuthorIdColumn()) {
+      return [];
+    }
+
+    try {
+      final response = await _client
+          .from('social_feed')
+          .select()
+          .eq('author_id', authorId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      return (response as List)
+          .map((item) => FeedItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('Error fetching creator feed items: $e');
+      return [];
+    }
+  }
+
   // Stream Social Feed (real-time updates)
   Stream<List<FeedItem>> watchSocialFeed() {
     return _client
@@ -456,29 +585,54 @@ class SupabaseService {
 
   // --- BOOKING METHODS ---
 
-  // Create Booking
+  Future<int> createBookingAtomic({
+    required int pianoId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required double totalPrice,
+    String status = 'confirmed',
+  }) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final result = await _client.rpc(
+        'create_booking_atomic',
+        params: {
+          'p_piano_id': pianoId,
+          'p_start': startTime.toUtc().toIso8601String(),
+          'p_end': endTime.toUtc().toIso8601String(),
+          'p_total_price': totalPrice,
+          'p_status': status,
+        },
+      );
+
+      if (result is int) return result;
+      if (result is num) return result.toInt();
+      if (result is String) {
+        final parsed = int.tryParse(result.trim());
+        if (parsed != null) return parsed;
+      }
+      throw Exception('Invalid booking response: $result');
+    } catch (e) {
+      print('Error creating booking: $e');
+      rethrow;
+    }
+  }
+
+  // Backward-compatible wrapper
   Future<void> createBooking({
     required int pianoId,
     required DateTime startTime,
     required DateTime endTime,
     required double totalPrice,
   }) async {
-    try {
-      final user = _client.auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-
-      await _client.from('bookings').insert({
-        'user_id': user.id, // Securely use the auth user id
-        'piano_id': pianoId,
-        'start_time': startTime.toIso8601String(),
-        'end_time': endTime.toIso8601String(),
-        'total_price': totalPrice,
-        'status': 'confirmed',
-      });
-    } catch (e) {
-      print('Error creating booking: $e');
-      throw e;
-    }
+    await createBookingAtomic(
+      pianoId: pianoId,
+      startTime: startTime,
+      endTime: endTime,
+      totalPrice: totalPrice,
+    );
   }
 
   // Get User Bookings
@@ -507,12 +661,93 @@ class SupabaseService {
   // Cancel Booking
   Future<void> cancelBooking(int id) async {
     try {
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
       await _client
           .from('bookings')
-          .update({'status': 'cancelled'}).eq('id', id);
+          .update({'status': 'cancelled'})
+          .eq('id', id)
+          .eq('user_id', user.id);
     } catch (e) {
       print('Error cancelling booking: $e');
-      throw e;
+      rethrow;
+    }
+  }
+
+  // --- RENTAL METHODS ---
+
+  Future<String> createRentalAtomic({
+    required int pianoId,
+    required DateTime startDate,
+    required DateTime endDate,
+    required double totalPrice,
+    required double depositAmount,
+    String status = 'pending',
+  }) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final result = await _client.rpc(
+        'create_rental_atomic',
+        params: {
+          'p_piano_id': pianoId,
+          'p_start_date': _toDateOnly(startDate),
+          'p_end_date': _toDateOnly(endDate),
+          'p_total_price': totalPrice,
+          'p_deposit_amount': depositAmount,
+          'p_status': status,
+        },
+      );
+
+      if (result is String && result.trim().isNotEmpty) {
+        return result.trim();
+      }
+      if (result is Map && result['id'] != null) {
+        return result['id'].toString();
+      }
+      throw Exception('Invalid rental response: $result');
+    } catch (e) {
+      print('Error creating rental: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMyRentals({int limit = 50}) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await _client
+          .from('rentals')
+          .select('*, pianos(id, name, image_url, daily_price, deposit_amount)')
+          .eq('renter_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      return (response as List)
+          .map((row) => Map<String, dynamic>.from(row as Map))
+          .toList();
+    } catch (e) {
+      print('Error fetching rentals: $e');
+      return [];
+    }
+  }
+
+  Future<void> cancelRental(String rentalId) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      await _client
+          .from('rentals')
+          .update({'status': 'cancelled'})
+          .eq('id', rentalId)
+          .eq('renter_id', user.id);
+    } catch (e) {
+      print('Error cancelling rental: $e');
+      rethrow;
     }
   }
 
@@ -563,6 +798,225 @@ class SupabaseService {
     }
   }
 
+  Future<bool> isFollowing(String followeeId) async {
+    final user = currentUser;
+    if (user == null || followeeId.trim().isEmpty) return false;
+    try {
+      final row = await _client
+          .from('follows')
+          .select('follower_id')
+          .eq('follower_id', user.id)
+          .eq('followee_id', followeeId.trim())
+          .maybeSingle();
+      return row != null;
+    } catch (e) {
+      print('Error checking follow status: $e');
+      return false;
+    }
+  }
+
+  Future<bool> toggleFollow(String followeeId) async {
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+    if (followeeId.trim().isEmpty) {
+      throw Exception('followee_id is required');
+    }
+
+    try {
+      final result = await _client.rpc(
+        'toggle_follow',
+        params: {'p_followee_id': followeeId.trim()},
+      );
+
+      if (result is bool) return result;
+      if (result is num) return result > 0;
+      if (result is String) {
+        final normalized = result.trim().toLowerCase();
+        return normalized == 'true' || normalized == '1';
+      }
+      return false;
+    } catch (e) {
+      print('Error toggling follow: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, int>> getProfileStats(String userId) async {
+    if (userId.trim().isEmpty) {
+      return const {
+        'followers_count': 0,
+        'following_count': 0,
+        'posts_count': 0,
+      };
+    }
+    try {
+      final result = await _client
+          .rpc('get_profile_stats', params: {'p_user_id': userId.trim()});
+
+      if (result is Map<String, dynamic>) {
+        return {
+          'followers_count':
+              int.tryParse(result['followers_count']?.toString() ?? '0') ?? 0,
+          'following_count':
+              int.tryParse(result['following_count']?.toString() ?? '0') ?? 0,
+          'posts_count':
+              int.tryParse(result['posts_count']?.toString() ?? '0') ?? 0,
+        };
+      }
+
+      if (result is Map) {
+        return {
+          'followers_count':
+              int.tryParse(result['followers_count']?.toString() ?? '0') ?? 0,
+          'following_count':
+              int.tryParse(result['following_count']?.toString() ?? '0') ?? 0,
+          'posts_count':
+              int.tryParse(result['posts_count']?.toString() ?? '0') ?? 0,
+        };
+      }
+    } catch (e) {
+      print('Error fetching profile stats: $e');
+    }
+
+    return const {
+      'followers_count': 0,
+      'following_count': 0,
+      'posts_count': 0,
+    };
+  }
+
+  Future<Set<String>> getSavedPostIds() async {
+    final user = currentUser;
+    if (user == null) return <String>{};
+
+    try {
+      final response = await _client
+          .from('saved_posts')
+          .select('feed_id')
+          .eq('user_id', user.id);
+      return (response as List)
+          .map((row) =>
+              row is Map<String, dynamic> ? row['feed_id']?.toString() : null)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+    } catch (e) {
+      print('Error fetching saved posts: $e');
+      return <String>{};
+    }
+  }
+
+  Future<void> savePost(String feedId) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final normalizedFeedId = _normalizeFeedDbId(feedId);
+    await _client.from('saved_posts').upsert(
+      {
+        'user_id': user.id,
+        'feed_id': normalizedFeedId,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      onConflict: 'user_id,feed_id',
+    );
+  }
+
+  Future<void> unsavePost(String feedId) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final normalizedFeedId = _normalizeFeedDbId(feedId);
+    await _client
+        .from('saved_posts')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('feed_id', normalizedFeedId);
+  }
+
+  Future<void> logShareEvent(String feedId) async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final normalizedFeedId = _normalizeFeedDbId(feedId);
+    try {
+      await _client.from('share_events').insert({
+        'feed_id': normalizedFeedId,
+        'user_id': user.id,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      print('Error logging share event: $e');
+    }
+  }
+
+  Future<bool> recordView({
+    required String feedId,
+    required String sessionId,
+  }) async {
+    final normalizedFeedId = feedId.trim();
+    if (normalizedFeedId.isEmpty) {
+      throw Exception('feed_id is required');
+    }
+
+    try {
+      final result = await _client.rpc(
+        'record_view',
+        params: {
+          'p_feed_id': normalizedFeedId,
+          'p_session_id': sessionId,
+        },
+      );
+
+      if (result is bool) return result;
+      if (result is num) return result > 0;
+      if (result is String) {
+        final normalized = result.trim().toLowerCase();
+        return normalized == 'true' || normalized == '1';
+      }
+      return false;
+    } catch (e) {
+      print('Error recording view: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, int>> getShareEventCountsByFeedIds(
+    Iterable<String> feedIds,
+  ) async {
+    final normalizedIds = <int>[];
+    for (final raw in feedIds) {
+      final parsed = int.tryParse(raw.trim());
+      if (parsed != null) {
+        normalizedIds.add(parsed);
+      }
+    }
+
+    if (normalizedIds.isEmpty) {
+      return <String, int>{};
+    }
+
+    try {
+      final response = await _client
+          .from('share_events')
+          .select('feed_id')
+          .inFilter('feed_id', normalizedIds);
+
+      final counts = <String, int>{};
+      for (final row in response as List) {
+        if (row is! Map<String, dynamic>) continue;
+        final feedId = row['feed_id']?.toString();
+        if (feedId == null || feedId.isEmpty) continue;
+        counts[feedId] = (counts[feedId] ?? 0) + 1;
+      }
+      return counts;
+    } catch (e) {
+      print('Error fetching share event counts: $e');
+      return <String, int>{};
+    }
+  }
+
   Future<bool> _socialFeedHasMediaTypeColumn() async {
     if (_socialFeedHasMediaTypeCache != null) {
       return _socialFeedHasMediaTypeCache!;
@@ -576,6 +1030,27 @@ class SupabaseService {
     return _socialFeedHasMediaTypeCache!;
   }
 
+  Future<bool> _socialFeedHasAuthorIdColumn() async {
+    if (_socialFeedHasAuthorIdCache != null) {
+      return _socialFeedHasAuthorIdCache!;
+    }
+    try {
+      await _client.from('social_feed').select('author_id').limit(1);
+      _socialFeedHasAuthorIdCache = true;
+    } catch (_) {
+      _socialFeedHasAuthorIdCache = false;
+    }
+    return _socialFeedHasAuthorIdCache!;
+  }
+
+  int _normalizeFeedDbId(String feedId) {
+    final parsed = int.tryParse(feedId.trim());
+    if (parsed == null) {
+      throw Exception('Invalid feed_id: $feedId');
+    }
+    return parsed;
+  }
+
   Future<String> _nextTextSocialFeedId() async {
     final rows = await _client.from('social_feed').select('id');
     var maxId = 0;
@@ -587,6 +1062,11 @@ class SupabaseService {
       }
     }
     return (maxId + 1).toString();
+  }
+
+  String _toDateOnly(DateTime value) {
+    final utc = DateTime.utc(value.year, value.month, value.day);
+    return utc.toIso8601String().split('T').first;
   }
 
   Future<_AuthorData> _resolveCurrentAuthor() async {

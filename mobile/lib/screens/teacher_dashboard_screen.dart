@@ -260,6 +260,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 builder: (context) => TeacherPublicProfileScreen(
                   teacherName: _teacherName,
                   teacherAvatar: _avatarUrl,
+                  teacherUserId: _supabaseService.currentUser?.id,
                 ),
               ),
             );
@@ -1171,6 +1172,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     builder: (context) => TeacherPublicProfileScreen(
                       teacherName: _teacherName,
                       teacherAvatar: _avatarUrl,
+                      teacherUserId: _supabaseService.currentUser?.id,
                     ),
                   ),
                 );

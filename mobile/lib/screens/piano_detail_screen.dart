@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'booking_screen.dart';
+import 'rental_deposit_screen.dart';
 
 class PianoDetailScreen extends StatefulWidget {
   final String pianoId;
@@ -25,7 +25,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
   static const Color cardDark = Color(0xFF1E1E1E);
 
   int _selectedImageIndex = 0;
-  
+
   final List<String> _additionalImages = [
     'https://picsum.photos/400/300?random=10',
     'https://picsum.photos/400/300?random=11',
@@ -44,7 +44,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
             slivers: [
               // App Bar with Image
               _buildAppBar(),
-              
+
               // Content
               SliverToBoxAdapter(
                 child: Column(
@@ -62,7 +62,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               ),
             ],
           ),
-          
+
           // Bottom Booking Button
           _buildBottomButton(),
         ],
@@ -145,7 +145,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
 
   Widget _buildHeader() {
     final isAvailable = widget.pianoData['available'] as bool;
-    
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -155,7 +155,8 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(20),
@@ -175,9 +176,12 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isAvailable ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                  color: isAvailable
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.grey.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -204,9 +208,9 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               ),
             ],
           ).animate().fadeIn().slideX(begin: -0.2),
-          
+
           const SizedBox(height: 16),
-          
+
           // Name
           Text(
             widget.pianoData['name'],
@@ -217,9 +221,9 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               height: 1.2,
             ),
           ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2),
-          
+
           const SizedBox(height: 12),
-          
+
           // Location
           Row(
             children: [
@@ -238,9 +242,9 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               ),
             ],
           ).animate().fadeIn(delay: 200.ms),
-          
+
           const SizedBox(height: 16),
-          
+
           // Rating & Reviews
           Row(
             children: [
@@ -250,9 +254,11 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                   if (index < rating.floor()) {
                     return const Icon(Icons.star, color: primaryGold, size: 18);
                   } else if (index < rating) {
-                    return const Icon(Icons.star_half, color: primaryGold, size: 18);
+                    return const Icon(Icons.star_half,
+                        color: primaryGold, size: 18);
                   } else {
-                    return Icon(Icons.star_border, color: Colors.grey[700], size: 18);
+                    return Icon(Icons.star_border,
+                        color: Colors.grey[700], size: 18);
                   }
                 }),
               ),
@@ -274,9 +280,9 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
               ),
             ],
           ).animate().fadeIn(delay: 300.ms),
-          
+
           const SizedBox(height: 20),
-          
+
           // Price
           Container(
             padding: const EdgeInsets.all(16),
@@ -314,7 +320,8 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: backgroundDark,
                     borderRadius: BorderRadius.circular(12),
@@ -382,8 +389,8 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _selectedImageIndex == index 
-                            ? primaryGold 
+                        color: _selectedImageIndex == index
+                            ? primaryGold
                             : Colors.grey[300]!,
                         width: 2,
                       ),
@@ -419,7 +426,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
 
   Widget _buildFeatures() {
     final features = widget.pianoData['features'] as List<String>;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -439,7 +446,8 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
             runSpacing: 12,
             children: features.map((feature) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
@@ -633,7 +641,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Sample Review
           Container(
             padding: const EdgeInsets.all(16),
@@ -717,7 +725,7 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
 
   Widget _buildBottomButton() {
     final isAvailable = widget.pianoData['available'] as bool;
-    
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -763,9 +771,9 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                   onPressed: () {},
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Booking Button
               Expanded(
                 child: Container(
@@ -780,7 +788,11 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                               const Color(0xFFBF953F),
                               const Color(0xFFE6C86E),
                             ]
-                          : [Colors.grey[700]!, Colors.grey[600]!, Colors.grey[700]!],
+                          : [
+                              Colors.grey[700]!,
+                              Colors.grey[600]!,
+                              Colors.grey[700]!
+                            ],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: isAvailable
@@ -799,10 +811,14 @@ class _PianoDetailScreenState extends State<PianoDetailScreen> {
                       borderRadius: BorderRadius.circular(16),
                       onTap: isAvailable
                           ? () {
+                              final initialPianoId =
+                                  int.tryParse(widget.pianoId);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const BookingScreen(),
+                                  builder: (context) => RentalDepositScreen(
+                                    initialPianoId: initialPianoId,
+                                  ),
                                 ),
                               );
                             }

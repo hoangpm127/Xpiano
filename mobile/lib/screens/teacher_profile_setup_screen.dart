@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import '../features/common/stub_helper.dart';
 import 'teacher_pricing_setup_screen.dart';
 
 class TeacherProfileSetupScreen extends StatefulWidget {
@@ -680,9 +681,10 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 ],
               ),
               onPressed: () {
-                // TODO: Show dialog to add custom location
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng thêm khu vực đang phát triển')),
+                openStub(
+                  context,
+                  'Thêm khu vực dạy',
+                  'Tính năng thêm khu vực tùy chỉnh sẽ được mở trong bản tiếp theo.',
                 );
               },
               backgroundColor: const Color(0xFF2A2A2A),

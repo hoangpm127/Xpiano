@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../models/feed_item.dart';
+import '../services/supabase_service.dart';
 import 'upload_video_screen.dart';
 import 'video_player_detail_screen.dart';
 
 class TeacherPublicProfileScreen extends StatefulWidget {
   final String? teacherName;
   final String? teacherAvatar;
+  final String? teacherUserId;
 
   const TeacherPublicProfileScreen({
-    Key? key,
+    super.key,
     this.teacherName,
     this.teacherAvatar,
-  }) : super(key: key);
+    this.teacherUserId,
+  });
 
   @override
   State<TeacherPublicProfileScreen> createState() =>
@@ -30,46 +35,42 @@ class _TeacherPublicProfileScreenState
   static const Color textMuted = Color(0xFF667085);
   static const Color borderLight = Color(0xFFE4E7EC);
 
-  int _selectedTabIndex = 0;
+  final SupabaseService _supabaseService = SupabaseService();
   final ScrollController _scrollController = ScrollController();
 
-  final String _likes = '128K';
-  final String _followers = '2.4K';
-  final String _bio =
-      'Chia sẻ hành trình học piano từ số 0.\nBeginner | Luyện ngón | Cover';
+  int _selectedTabIndex = 0;
+  bool _isLoading = true;
+  bool _isFollowLoading = false;
+  String? _targetUserId;
+  String _displayName = 'Creator';
+  String? _displayAvatar;
+  String _bio = 'Chia se hanh trinh hoc piano tu so 0.';
+  bool _isFollowing = false;
+  int _followersCount = 0;
+  int _followingCount = 0;
+  int _postsCount = 0;
+  List<FeedItem> _videos = const [];
 
-  final List<VideoItem> _videos = [
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=1',
-      title: 'Luyện ngón 5 phút',
-      duration: '0:32',
-    ),
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=2',
-      title: 'Cover Ballad',
-      duration: '1:15',
-    ),
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=3',
-      title: 'Bài 1 cho người mới',
-      duration: '10:00',
-    ),
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=4',
-      title: '88 phím vs 61 phím',
-      duration: '0:32',
-    ),
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=5',
-      title: 'Kỹ thuật pedal cơ bản',
-      duration: '2:45',
-    ),
-    VideoItem(
-      thumbnail: 'https://picsum.photos/400/600?random=6',
-      title: 'Chơi hợp âm đầu tiên',
-      duration: '3:20',
-    ),
-  ];
+  String? get _currentUserId => _supabaseService.currentUser?.id;
+  bool get _isOwnProfile =>
+      _targetUserId != null &&
+      _currentUserId != null &&
+      _targetUserId == _currentUserId;
+  bool get _canFollow =>
+      _targetUserId != null &&
+      _currentUserId != null &&
+      _targetUserId != _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayName = widget.teacherName?.trim().isNotEmpty == true
+        ? widget.teacherName!.trim()
+        : _displayName;
+    _displayAvatar = widget.teacherAvatar;
+    _targetUserId = widget.teacherUserId ?? _currentUserId;
+    _loadProfile();
+  }
 
   @override
   void dispose() {
@@ -77,11 +78,120 @@ class _TeacherPublicProfileScreenState
     super.dispose();
   }
 
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final targetUserId = _targetUserId;
+    if (targetUserId == null || targetUserId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        _supabaseService.getTeacherProfileByUserId(targetUserId),
+        _supabaseService.getProfileStats(targetUserId),
+        _supabaseService.getCreatorFeedItems(authorId: targetUserId, limit: 60),
+        _canFollow
+            ? _supabaseService.isFollowing(targetUserId)
+            : Future<bool>.value(false),
+      ]);
+
+      final profile = results[0] as Map<String, dynamic>?;
+      final stats = results[1] as Map<String, int>;
+      final videos = results[2] as List<FeedItem>;
+      final following = results[3] as bool;
+
+      if (!mounted) return;
+      setState(() {
+        _displayName =
+            (profile?['full_name'] as String?)?.trim().isNotEmpty == true
+                ? (profile!['full_name'] as String).trim()
+                : _displayName;
+        _displayAvatar =
+            (profile?['avatar_url'] as String?)?.trim().isNotEmpty == true
+                ? (profile!['avatar_url'] as String).trim()
+                : _displayAvatar;
+        final profileBio = (profile?['bio'] as String?)?.trim();
+        if (profileBio != null && profileBio.isNotEmpty) {
+          _bio = profileBio;
+        }
+        _followersCount = stats['followers_count'] ?? 0;
+        _followingCount = stats['following_count'] ?? 0;
+        _postsCount = stats['posts_count'] ?? videos.length;
+        _videos = videos;
+        _isFollowing = following;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    final targetUserId = _targetUserId;
+    if (!_canFollow || targetUserId == null) return;
+    if (_isFollowLoading) return;
+
+    final previousFollowing = _isFollowing;
+    final optimisticFollowing = !previousFollowing;
+    setState(() {
+      _isFollowLoading = true;
+      _isFollowing = optimisticFollowing;
+      _followersCount += optimisticFollowing ? 1 : -1;
+      if (_followersCount < 0) _followersCount = 0;
+    });
+
+    try {
+      final serverFollowing = await _supabaseService.toggleFollow(targetUserId);
+      if (!mounted) return;
+      setState(() {
+        if (serverFollowing != optimisticFollowing) {
+          _followersCount += serverFollowing ? 1 : -1;
+          if (_followersCount < 0) _followersCount = 0;
+        }
+        _isFollowing = serverFollowing;
+        _isFollowLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isFollowing = previousFollowing;
+        _followersCount += previousFollowing ? 1 : -1;
+        if (_followersCount < 0) _followersCount = 0;
+        _isFollowLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Follow failed: $e', style: GoogleFonts.inter()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openUploadVideo() async {
+    final posted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UploadVideoScreen(videoPath: null),
+      ),
+    );
+    if (posted == true) {
+      await _loadProfile();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final displayName = widget.teacherName ?? 'Linh Nguyễn';
-    final displayAvatar = widget.teacherAvatar;
-
     return Scaffold(
       backgroundColor: backgroundLight,
       body: Stack(
@@ -90,7 +200,7 @@ class _TeacherPublicProfileScreenState
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(
-                child: _buildProfileHeader(displayName, displayAvatar),
+                child: _buildProfileHeader(),
               ),
               SliverPersistentHeader(
                 pinned: true,
@@ -108,12 +218,13 @@ class _TeacherPublicProfileScreenState
             left: 16,
             child: _buildBackButton(),
           ),
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Center(child: _buildFAB()),
-          ),
+          if (_isOwnProfile)
+            Positioned(
+              bottom: 24,
+              left: 0,
+              right: 0,
+              child: Center(child: _buildCreateVideoButton()),
+            ),
         ],
       ),
     );
@@ -137,16 +248,12 @@ class _TeacherPublicProfileScreenState
             ),
           ],
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new,
-          color: textDark,
-          size: 18,
-        ),
+        child: const Icon(Icons.arrow_back_ios_new, color: textDark, size: 18),
       ),
-    ).animate().fadeIn(duration: 300.ms);
+    ).animate().fadeIn(duration: 280.ms);
   }
 
-  Widget _buildProfileHeader(String name, String? avatar) {
+  Widget _buildProfileHeader() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -159,153 +266,182 @@ class _TeacherPublicProfileScreenState
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFFFFBF0),
-            Color(0xFFF7F9FD),
-          ],
+          colors: [Color(0xFFFFFBF0), Color(0xFFF7F9FD)],
         ),
       ),
       child: Column(
         children: [
-          Container(
-            width: 104,
-            height: 104,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: primaryGold, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryGold.withOpacity(0.28),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: avatar != null && avatar.isNotEmpty
-                  ? Image.network(
-                      avatar,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                    )
-                  : _buildDefaultAvatar(),
-            ),
-          ).animate().scale(
-                begin: const Offset(0.82, 0.82),
-                duration: 500.ms,
-                curve: Curves.easeOutBack,
-              ),
-          const SizedBox(height: 18),
+          _buildAvatar(),
+          const SizedBox(height: 16),
           Text(
-            name,
+            _displayName,
             style: GoogleFonts.inter(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: textDark,
             ),
-          ).animate().fadeIn(delay: 100.ms),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: primaryGold.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryGold, width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.verified, color: primaryGold, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Giáo viên đã xác thực',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: darkGold,
-                  ),
-                ),
-              ],
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideY(
-                begin: 0.2,
-                duration: 400.ms,
-              ),
-          const SizedBox(height: 18),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          if (_canFollow) _buildFollowButton(),
+          if (_canFollow) const SizedBox(height: 14),
           Text(
             _bio,
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w400,
               color: textMuted,
-              height: 1.55,
+              height: 1.45,
             ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 300.ms),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatItem(_likes, 'lượt thích'),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: borderLight,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              _buildStatItem(_followers, 'người theo dõi'),
-            ],
-          ).animate().fadeIn(delay: 400.ms),
+          ),
+          const SizedBox(height: 18),
+          _buildStatsRow(),
         ],
       ),
     );
   }
 
+  Widget _buildAvatar() {
+    return Container(
+      width: 104,
+      height: 104,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: primaryGold, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGold.withOpacity(0.25),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: _displayAvatar != null && _displayAvatar!.isNotEmpty
+            ? Image.network(
+                _displayAvatar!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+              )
+            : _buildDefaultAvatar(),
+      ),
+    ).animate().scale(
+          begin: const Offset(0.88, 0.88),
+          duration: 420.ms,
+          curve: Curves.easeOutBack,
+        );
+  }
+
   Widget _buildDefaultAvatar() {
     return Container(
       color: cardAlt,
-      child: Icon(Icons.person, size: 48, color: Colors.grey[500]),
+      child: Icon(Icons.person, size: 50, color: Colors.grey[500]),
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildFollowButton() {
+    final isFollowing = _isFollowing;
+    return ElevatedButton(
+      onPressed: _isFollowLoading ? null : _toggleFollow,
+      style: ElevatedButton.styleFrom(
+        elevation: 0,
+        backgroundColor: isFollowing ? cardLight : primaryGold,
+        foregroundColor: isFollowing ? textDark : Colors.black,
+        side: BorderSide(color: isFollowing ? borderLight : primaryGold),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isFollowLoading)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          if (_isFollowLoading) const SizedBox(width: 8),
+          Text(
+            isFollowing ? 'Following' : 'Follow',
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow() {
     return Row(
       children: [
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: textDark,
-          ),
+        Expanded(
+          child: _buildStatCard(_postsCount, 'Bai dang'),
         ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: textMuted,
-          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatCard(_followersCount, 'Follower'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatCard(_followingCount, 'Following'),
         ),
       ],
     );
   }
 
+  Widget _buildStatCard(int value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: cardLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderLight),
+      ),
+      child: Column(
+        children: [
+          Text(
+            _formatCount(value),
+            style: GoogleFonts.inter(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCount(int value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toString();
+  }
+
   Widget _buildContentTabs() {
     return Container(
       color: backgroundLight,
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Row(
         children: [
           _buildTab('Video', 0),
-          const SizedBox(width: 12),
-          _buildTab('Bộ sưu tập', 1),
-          const SizedBox(width: 12),
-          _buildTab('Hiệu quả', 2),
+          const SizedBox(width: 10),
+          _buildTab('Bo suu tap', 1),
+          const SizedBox(width: 10),
+          _buildTab('Hieu qua', 2),
         ],
       ),
     );
@@ -313,42 +449,28 @@ class _TeacherPublicProfileScreenState
 
   Widget _buildTab(String title, int index) {
     final isActive = _selectedTabIndex == index;
-
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTabIndex = index;
-          });
-        },
+        onTap: () => setState(() => _selectedTabIndex = index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isActive ? primaryGold : cardLight,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isActive ? primaryGold : borderLight,
               width: 1,
             ),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: primaryGold.withOpacity(0.25),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
           ),
           child: Text(
             title,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: isActive ? Colors.black : textMuted,
             ),
-            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -360,21 +482,32 @@ class _TeacherPublicProfileScreenState
       return _buildVideoGrid();
     }
     if (_selectedTabIndex == 1) {
-      return _buildEmptyState('Chưa có bộ sưu tập nào');
+      return _buildEmptyState('Chua co bo suu tap nao');
     }
-    return _buildEmptyState('Dữ liệu hiệu quả đang được cập nhật');
+    return _buildEmptyState('Du lieu hieu qua dang cap nhat');
   }
 
   Widget _buildVideoGrid() {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 80),
+        child: Center(child: CircularProgressIndicator(color: primaryGold)),
+      );
+    }
+
+    if (_videos.isEmpty) {
+      return _buildEmptyState('Chua co video nao');
+    }
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 104),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, _isOwnProfile ? 108 : 32),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 12,
-          mainAxisSpacing: 20,
+          mainAxisSpacing: 18,
           childAspectRatio: 0.65,
         ),
         itemCount: _videos.length,
@@ -385,17 +518,20 @@ class _TeacherPublicProfileScreenState
     );
   }
 
-  Widget _buildVideoCard(VideoItem video, int index) {
+  Widget _buildVideoCard(FeedItem video, int index) {
+    final thumbnail = (video.thumbUrl ?? video.mediaUrl).trim();
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => VideoPlayerDetailScreen(
-              videoTitle: video.title,
-              duration: video.duration,
-              thumbnail: video.thumbnail,
-              author: widget.teacherName ?? 'Giáo viên',
+              videoTitle: video.caption.trim().isNotEmpty
+                  ? video.caption.trim()
+                  : 'Video',
+              duration: '--:--',
+              thumbnail: thumbnail,
+              author: _displayName,
             ),
           ),
         );
@@ -412,7 +548,7 @@ class _TeacherPublicProfileScreenState
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
+                    blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -422,42 +558,26 @@ class _TeacherPublicProfileScreenState
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      video.thumbnail,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return Container(
-                          color: cardAlt,
-                          child: Center(
+                    thumbnail.isEmpty
+                        ? Container(
+                            color: cardAlt,
                             child: Icon(
-                              Icons.play_circle_outline,
-                              size: 48,
-                              color: Colors.grey[600],
+                              Icons.image_not_supported,
+                              color: Colors.grey[500],
+                            ),
+                          )
+                        : Image.network(
+                            thumbnail,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: cardAlt,
+                              child: Icon(
+                                Icons.play_circle_outline,
+                                color: Colors.grey[600],
+                                size: 40,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          video.duration,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
                     Center(
                       child: Container(
                         width: 44,
@@ -466,8 +586,11 @@ class _TeacherPublicProfileScreenState
                           color: Colors.white.withOpacity(0.9),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.play_arrow,
-                            color: Colors.black87, size: 28),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.black87,
+                          size: 28,
+                        ),
                       ),
                     ),
                   ],
@@ -475,38 +598,33 @@ class _TeacherPublicProfileScreenState
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
-            video.title,
+            video.caption.trim().isNotEmpty ? video.caption.trim() : 'Video',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: textDark,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
-    ).animate().fadeIn(delay: (index * 50).ms).slideY(
-          begin: 0.2,
-          duration: 400.ms,
-          delay: (index * 50).ms,
-        );
+    ).animate().fadeIn(delay: (index * 45).ms);
   }
 
   Widget _buildEmptyState(String message) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 80),
+      padding: const EdgeInsets.symmetric(vertical: 76),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[500]),
-          const SizedBox(height: 16),
+          Icon(Icons.inbox_outlined, size: 60, color: Colors.grey[500]),
+          const SizedBox(height: 14),
           Text(
             message,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: textMuted,
             ),
@@ -516,26 +634,22 @@ class _TeacherPublicProfileScreenState
     );
   }
 
-  Widget _buildFAB() {
+  Widget _buildCreateVideoButton() {
     return GestureDetector(
-      onTap: _showCreateVideoDialog,
+      onTap: _openUploadVideo,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              Color(0xFFE6C86E),
-              Color(0xFFBF953F),
-              Color(0xFFE6C86E),
-            ],
+            colors: [Color(0xFFE6C86E), Color(0xFFBF953F), Color(0xFFE6C86E)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
               color: primaryGold.withOpacity(0.4),
-              blurRadius: 20,
+              blurRadius: 18,
               offset: const Offset(0, 6),
             ),
           ],
@@ -543,144 +657,16 @@ class _TeacherPublicProfileScreenState
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add, color: Colors.black, size: 24),
-            const SizedBox(width: 10),
+            const Icon(Icons.add, color: Colors.black, size: 22),
+            const SizedBox(width: 8),
             Text(
-              'Tạo video mới',
+              'Tao video moi',
               style: GoogleFonts.inter(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: Colors.black,
               ),
             ),
-          ],
-        ),
-      ),
-    ).animate(onPlay: (controller) => controller.repeat(reverse: true)).shimmer(
-          duration: 2000.ms,
-          color: Colors.white.withOpacity(0.3),
-        );
-  }
-
-  void _showCreateVideoDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: cardLight,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: borderLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tạo video mới',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: textDark,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildCreateOption(
-              icon: Icons.videocam,
-              title: 'Quay video mới',
-              subtitle: 'Sử dụng camera để quay video',
-              onTap: () {
-                Navigator.pop(context);
-                _openUploadVideo();
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildCreateOption(
-              icon: Icons.photo_library,
-              title: 'Chọn từ thư viện',
-              subtitle: 'Tải video có sẵn lên',
-              onTap: () {
-                Navigator.pop(context);
-                _openUploadVideo();
-              },
-            ),
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openUploadVideo() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const UploadVideoScreen(videoPath: null),
-      ),
-    );
-  }
-
-  Widget _buildCreateOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardAlt,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderLight, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: primaryGold.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: darkGold, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[500]),
           ],
         ),
       ),
@@ -694,10 +680,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   _StickyTabBarDelegate({required this.child});
 
   @override
-  double get minExtent => 64;
+  double get minExtent => 60;
 
   @override
-  double get maxExtent => 64;
+  double get maxExtent => 60;
 
   @override
   Widget build(
@@ -706,19 +692,7 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
+  bool shouldRebuild(covariant _StickyTabBarDelegate oldDelegate) {
     return false;
   }
-}
-
-class VideoItem {
-  final String thumbnail;
-  final String title;
-  final String duration;
-
-  VideoItem({
-    required this.thumbnail,
-    required this.title,
-    required this.duration,
-  });
 }

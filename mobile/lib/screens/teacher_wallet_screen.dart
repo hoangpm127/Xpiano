@@ -1069,32 +1069,10 @@ class _TeacherWalletScreenState extends State<TeacherWalletScreen> {
                       return;
                     }
                     Navigator.pop(sheetContext);
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        backgroundColor: cardDark,
-                        title: Text(
-                          'Yêu cầu đã tạo',
-                          style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700, color: textDark),
-                        ),
-                        content: Text(
-                          'Đang xử lý rút ${_formatCurrency(amount)}đ về $selectedBank.\nSố tiền thực nhận: ${_formatCurrency(received)}đ',
-                          style:
-                              GoogleFonts.inter(color: textMuted, height: 1.5),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            child: Text(
-                              'Đóng',
-                              style: GoogleFonts.inter(
-                                  color: primaryGold,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
-                      ),
+                    openStub(
+                      context,
+                      'Xác nhận rút tiền',
+                      'Luồng rút ${_formatCurrency(amount)}đ về $selectedBank (thực nhận ${_formatCurrency(received)}đ) sẽ được kết nối backend ở bản tiếp theo.',
                     );
                   },
                   child: Container(

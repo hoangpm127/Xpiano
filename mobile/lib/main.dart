@@ -1,12 +1,13 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/supabase_service.dart';
 import 'models/feed_item.dart';
-import 'screens/booking_screen.dart';
 import 'screens/create_video_screen.dart';
 import 'screens/messages_screen.dart';
 import 'screens/profile_screen.dart';
@@ -68,6 +69,11 @@ class PianoSocialFeedApp extends StatelessWidget {
   }
 }
 
+enum FeedScope {
+  forYou,
+  following,
+}
+
 class PianoFeedScreen extends StatefulWidget {
   const PianoFeedScreen({super.key});
 
@@ -100,12 +106,20 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   IconData? _playbackFeedbackIcon;
   int? _playbackFeedbackItemId;
   final Set<int> _likedFeedIds = {};
-  final Set<int> _savedFeedIds = {};
+  final Set<String> _savedFeedIds = {};
   final Set<int> _saveAnimatingFeedIds = {};
   final Set<int> _likeRequestsInFlight = {};
+  final Set<String> _saveRequestsInFlight = {};
+  final Set<int> _shareRequestsInFlight = {};
   final Map<int, int> _likeCountOverrides = {};
   final Map<int, int> _commentCountOverrides = {};
+  final Map<int, int> _shareCountOverrides = {};
   Timer? _playbackFeedbackTimer;
+  Timer? _pendingViewTimer;
+  String? _pendingViewFeedId;
+  final Set<String> _viewRequestsInFlight = {};
+  final Set<String> _viewRecordedInSession = {};
+  late final String _viewSessionId = _generateSessionId();
 
   DateTime? _lastTapDownAt;
   Offset? _lastTapDownPosition;
@@ -116,6 +130,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
 
   static const int _feedPageSize = 12;
   int _selectedIndex = 0;
+  FeedScope _feedScope = FeedScope.forYou;
 
   // Guest Mode State
   bool _isGuest = true;
@@ -130,9 +145,20 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
 
   void _checkAuthState() {
     final session = Supabase.instance.client.auth.currentSession;
+    final isGuest = session == null;
     setState(() {
-      _isGuest = session == null;
+      _isGuest = isGuest;
+      if (isGuest) {
+        _savedFeedIds.clear();
+      }
     });
+    if (!isGuest) {
+      unawaited(_loadSavedPosts());
+      unawaited(_syncShareCountsFromDb());
+    }
+    if (_feedScope == FeedScope.following) {
+      unawaited(_loadInitialFeed());
+    }
   }
 
   Future<void> _loadInitialFeed() async {
@@ -145,11 +171,26 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       _resetPlaybackState();
       _nextCursor = null;
       _feedItems.clear();
+      _shareCountOverrides.clear();
     });
 
     try {
-      final page =
-          await _supabaseService.getSocialFeedPage(limit: _feedPageSize);
+      final FeedPageResult page;
+      if (_feedScope == FeedScope.following) {
+        if (_isGuest) {
+          if (!mounted) return;
+          setState(() {
+            _isInitialFeedLoading = false;
+            _hasMoreFeed = false;
+            _feedItems.clear();
+          });
+          return;
+        }
+        page =
+            await _supabaseService.getFollowingFeedPage(limit: _feedPageSize);
+      } else {
+        page = await _supabaseService.getSocialFeedPage(limit: _feedPageSize);
+      }
       if (!mounted) return;
 
       setState(() {
@@ -158,6 +199,8 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
         _hasMoreFeed = page.hasMore;
         _isInitialFeedLoading = false;
       });
+      _scheduleViewTrackingForActiveItem();
+      unawaited(_syncShareCountsFromDb(items: page.items));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -178,10 +221,18 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     });
 
     try {
-      final page = await _supabaseService.getSocialFeedPage(
-        limit: _feedPageSize,
-        cursor: _nextCursor,
-      );
+      final FeedPageResult page;
+      if (_feedScope == FeedScope.following) {
+        page = await _supabaseService.getFollowingFeedPage(
+          limit: _feedPageSize,
+          cursor: _nextCursor,
+        );
+      } else {
+        page = await _supabaseService.getSocialFeedPage(
+          limit: _feedPageSize,
+          cursor: _nextCursor,
+        );
+      }
       if (!mounted) return;
 
       final existingIds = _feedItems.map((item) => item.id).toSet();
@@ -194,6 +245,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
         _hasMoreFeed = page.hasMore && newItems.isNotEmpty;
         _isLoadingMoreFeed = false;
       });
+      unawaited(_syncShareCountsFromDb(items: newItems));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -206,6 +258,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _playbackFeedbackTimer?.cancel();
+    _cancelPendingViewTracking();
     _pageController.dispose();
     super.dispose();
   }
@@ -219,6 +272,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
         _resetPlaybackState();
       }
     });
+    _scheduleViewTrackingForActiveItem();
   }
 
   bool get _isFeedTabVisible => _selectedIndex == 0;
@@ -234,16 +288,57 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     return _commentCountOverrides[item.id] ?? item.commentsCount;
   }
 
+  int _effectiveSharesCount(FeedItem item) {
+    return _shareCountOverrides[item.id] ?? item.sharesCount;
+  }
+
   bool _isItemLiked(FeedItem item) {
     return _likedFeedIds.contains(item.id);
   }
 
   bool _isItemSaved(FeedItem item) {
-    return _savedFeedIds.contains(item.id);
+    return _savedFeedIds.contains(item.dbId);
+  }
+
+  Future<void> _loadSavedPosts() async {
+    try {
+      final savedIds = await _supabaseService.getSavedPostIds();
+      if (!mounted) return;
+      setState(() {
+        _savedFeedIds
+          ..clear()
+          ..addAll(savedIds);
+      });
+    } catch (_) {
+      // Keep local empty state on failure.
+    }
+  }
+
+  Future<void> _syncShareCountsFromDb({List<FeedItem>? items}) async {
+    if (_isGuest) return;
+    final targetItems = items ?? _feedItems;
+    if (targetItems.isEmpty) return;
+
+    try {
+      final counts = await _supabaseService.getShareEventCountsByFeedIds(
+        targetItems.map((item) => item.dbId),
+      );
+      if (!mounted) return;
+      setState(() {
+        for (final item in targetItems) {
+          final dbCount = counts[item.dbId] ?? 0;
+          _shareCountOverrides[item.id] =
+              dbCount > item.sharesCount ? dbCount : item.sharesCount;
+        }
+      });
+    } catch (_) {
+      // Keep current local share counts if sync fails.
+    }
   }
 
   void _resetPlaybackState() {
     _playbackFeedbackTimer?.cancel();
+    _cancelPendingViewTracking();
     _isHoldingToPause = false;
     _manuallyPausedItemId = null;
     _playbackFeedbackIcon = null;
@@ -362,6 +457,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       feedId: item.id,
       paused: !wasPaused,
     );
+    _scheduleViewTrackingForActiveItem();
   }
 
   void _onFeedLongPressStart(
@@ -381,6 +477,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       _playbackFeedbackItemId = null;
       _playbackFeedbackIcon = null;
     });
+    _scheduleViewTrackingForActiveItem();
   }
 
   void _onFeedLongPressEnd(
@@ -394,6 +491,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     setState(() {
       _isHoldingToPause = false;
     });
+    _scheduleViewTrackingForActiveItem();
   }
 
   void _handleDoubleTapLike(FeedItem item, int index) {
@@ -473,6 +571,7 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
             teacherName: item.authorName,
             teacherAvatar:
                 item.authorAvatar.isNotEmpty ? item.authorAvatar : null,
+            teacherUserId: item.authorId,
           ),
         ),
       );
@@ -499,135 +598,96 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     );
   }
 
-  void _toggleSave(FeedItem item) {
-    final id = item.id;
+  Future<void> _toggleSave(FeedItem item) async {
+    final dbId = item.dbId;
+    if (_saveRequestsInFlight.contains(dbId)) return;
+
+    final wasSaved = _savedFeedIds.contains(dbId);
     setState(() {
-      if (_savedFeedIds.contains(id)) {
-        _savedFeedIds.remove(id);
+      if (wasSaved) {
+        _savedFeedIds.remove(dbId);
       } else {
-        _savedFeedIds.add(id);
+        _savedFeedIds.add(dbId);
       }
-      _saveAnimatingFeedIds.add(id);
+      _saveAnimatingFeedIds.add(item.id);
+      _saveRequestsInFlight.add(dbId);
     });
 
     Future.delayed(const Duration(milliseconds: 220), () {
       if (!mounted) return;
       setState(() {
-        _saveAnimatingFeedIds.remove(id);
+        _saveAnimatingFeedIds.remove(item.id);
       });
     });
+
+    try {
+      if (wasSaved) {
+        await _supabaseService.unsavePost(dbId);
+      } else {
+        await _supabaseService.savePost(dbId);
+      }
+      unawaited(_loadSavedPosts());
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (wasSaved) {
+          _savedFeedIds.add(dbId);
+        } else {
+          _savedFeedIds.remove(dbId);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasSaved ? 'Unsave failed. Try again.' : 'Save failed. Try again.',
+            style: GoogleFonts.inter(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saveRequestsInFlight.remove(dbId);
+        });
+      }
+    }
   }
 
-  void _openShareSheet(FeedItem item) {
+  Future<void> _sharePost(FeedItem item) async {
+    if (_shareRequestsInFlight.contains(item.id)) return;
+
     final targetUrl = item.videoUrl ?? item.mediaUrl;
     final shareText = '${item.caption}\n$targetUrl';
+    final previousCount = _effectiveSharesCount(item);
 
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD1D5DB),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Chia sẻ',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    shareText,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF374151),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(this.context);
+    setState(() {
+      _shareRequestsInFlight.add(item.id);
+      _shareCountOverrides[item.id] = previousCount + 1;
+    });
 
-                          Clipboard.setData(ClipboardData(text: shareText))
-                              .then((_) {
-                            if (!mounted) return;
-                            navigator.pop();
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Da copy noi dung chia se'),
-                              ),
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.copy, size: 18),
-                        label: const Text('Copy'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF111827),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF111827),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text('Đóng'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    try {
+      await Share.share(shareText);
+      await _supabaseService.logShareEvent(item.dbId);
+      unawaited(_syncShareCountsFromDb(items: [item]));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _shareCountOverrides[item.id] = previousCount;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Share failed. Try again.', style: GoogleFonts.inter()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _shareRequestsInFlight.remove(item.id);
+        });
+      }
+    }
   }
 
   Widget _buildHeartOverlay(FeedItem item) {
@@ -798,19 +858,22 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
   }
 
   Widget _buildFeedTab() {
-    if (_isInitialFeedLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: primaryGold),
-      );
+    if (_feedScope == FeedScope.following && _isGuest) {
+      return _buildFollowingLoginGate();
     }
 
-    if (_feedError != null) {
-      return Center(
+    Widget content;
+    if (_isInitialFeedLoading) {
+      content = const Center(
+        child: CircularProgressIndicator(color: primaryGold),
+      );
+    } else if (_feedError != null) {
+      content = Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Lỗi tải feed',
+              'Loi tai feed',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 16,
@@ -824,23 +887,88 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
                 backgroundColor: primaryGold,
                 foregroundColor: Colors.black,
               ),
-              child: const Text('Thử lại'),
+              child: const Text('Thu lai'),
             ),
           ],
         ),
       );
-    }
-
-    if (_feedItems.isEmpty) {
-      return Center(
+    } else if (_feedItems.isEmpty) {
+      content = Center(
         child: Text(
-          'Chưa có bài viết nào',
+          _feedScope == FeedScope.following
+              ? 'Chua co video tu creators ban dang follow'
+              : 'Chua co bai viet nao',
           style: GoogleFonts.inter(color: Colors.white),
         ),
       );
+    } else {
+      content = _buildFeedView();
     }
 
-    return _buildFeedView();
+    return Stack(
+      children: [
+        Positioned.fill(child: content),
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 0,
+          right: 0,
+          child: _buildFeedScopeTabs(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFollowingLoginGate() {
+    return Container(
+      color: backgroundDark,
+      child: Stack(
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_outline, color: primaryGold, size: 52),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Dang nhap de xem Following feed',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: () => _checkLogin(() {}),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Text(
+                      'Dang nhap',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 0,
+            right: 0,
+            child: _buildFeedScopeTabs(),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFeedView() {
@@ -853,8 +981,10 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
             _currentFeedIndex = index;
             _resetPlaybackState();
           });
+          _scheduleViewTrackingForActiveItem();
           _loadMoreFeedIfNeeded(index);
         } else if (_hasMoreFeed) {
+          _cancelPendingViewTracking();
           _loadMoreFeedIfNeeded(_feedItems.length - 1);
         }
       },
@@ -1018,6 +1148,62 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
           // Bottom Content Area
           _buildBottomContent(item),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFeedScopeTabs() {
+    return IgnorePointer(
+      ignoring: !_isFeedTabVisible,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withOpacity(0.15)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildFeedScopeButton(
+                label: 'For You',
+                scope: FeedScope.forYou,
+              ),
+              const SizedBox(width: 4),
+              _buildFeedScopeButton(
+                label: 'Following',
+                scope: FeedScope.following,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedScopeButton({
+    required String label,
+    required FeedScope scope,
+  }) {
+    final active = _feedScope == scope;
+    return GestureDetector(
+      onTap: () => _onFeedScopeChanged(scope),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? Colors.white.withOpacity(0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
@@ -1203,7 +1389,9 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
                 const SizedBox(height: 24),
                 // Bookmark Button
                 GestureDetector(
-                  onTap: () => _toggleSave(item),
+                  onTap: () => _checkLogin(() {
+                    _toggleSave(item);
+                  }),
                   child: _buildSidebarAction(
                     icon: _isItemSaved(item)
                         ? Icons.bookmark
@@ -1219,10 +1407,12 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
                 const SizedBox(height: 24),
                 // Share Button
                 GestureDetector(
-                  onTap: () => _openShareSheet(item),
+                  onTap: () => _checkLogin(() {
+                    _sharePost(item);
+                  }),
                   child: _buildSidebarAction(
                     icon: Icons.reply,
-                    label: item.formattedShares,
+                    label: item.formatCount(_effectiveSharesCount(item)),
                   ),
                 ),
               ],
@@ -1470,12 +1660,12 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
                                   ),
                                 );
                               } else {
-                                // If no piano_id, navigate to general booking screen
+                                // If no piano_id, open piano rental list.
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) =>
-                                          const BookingScreen()),
+                                          const PianoRentalScreen()),
                                 );
                               }
                             }),
@@ -1575,12 +1765,27 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
       }
       _selectedIndex = nextIndex;
     });
+    _scheduleViewTrackingForActiveItem();
+  }
+
+  void _onFeedScopeChanged(FeedScope nextScope) {
+    if (_feedScope == nextScope) return;
+    setState(() {
+      _feedScope = nextScope;
+      _currentFeedIndex = 0;
+      _resetPlaybackState();
+    });
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+    _loadInitialFeed();
   }
 
   void _handleVideoPostedFromCreateTab() {
     if (!mounted) return;
     setState(() {
       _selectedIndex = 0;
+      _feedScope = FeedScope.forYou;
       _currentFeedIndex = 0;
       _resetPlaybackState();
     });
@@ -1588,6 +1793,86 @@ class _PianoFeedScreenState extends State<PianoFeedScreen>
     if (_pageController.hasClients) {
       _pageController.jumpToPage(0);
     }
+  }
+
+  FeedItem? _activeFeedItem() {
+    if (_currentFeedIndex < 0 || _currentFeedIndex >= _feedItems.length) {
+      return null;
+    }
+    return _feedItems[_currentFeedIndex];
+  }
+
+  void _cancelPendingViewTracking() {
+    _pendingViewTimer?.cancel();
+    _pendingViewTimer = null;
+    _pendingViewFeedId = null;
+  }
+
+  void _scheduleViewTrackingForActiveItem() {
+    _cancelPendingViewTracking();
+    if (!_isFeedPlaybackActive) return;
+
+    final activeItem = _activeFeedItem();
+    if (activeItem == null || !activeItem.isVideo) return;
+    if (!_shouldPlayItemVideo(activeItem, _currentFeedIndex)) return;
+
+    final feedId = activeItem.dbId.trim();
+    if (feedId.isEmpty) return;
+    if (_viewRecordedInSession.contains(feedId) ||
+        _viewRequestsInFlight.contains(feedId)) {
+      return;
+    }
+
+    _pendingViewFeedId = feedId;
+    final trackedIndex = _currentFeedIndex;
+    _pendingViewTimer = Timer(const Duration(seconds: 2), () async {
+      if (!mounted || !_isFeedPlaybackActive) return;
+      if (_currentFeedIndex != trackedIndex) return;
+
+      final currentItem = _activeFeedItem();
+      if (currentItem == null || currentItem.dbId.trim() != feedId) return;
+      if (!_shouldPlayItemVideo(currentItem, _currentFeedIndex)) return;
+      if (_pendingViewFeedId != feedId) return;
+
+      await _recordViewForActiveItem(feedId);
+    });
+  }
+
+  Future<void> _recordViewForActiveItem(String feedId) async {
+    if (_viewRecordedInSession.contains(feedId) ||
+        _viewRequestsInFlight.contains(feedId)) {
+      return;
+    }
+
+    _viewRequestsInFlight.add(feedId);
+    try {
+      await _supabaseService.recordView(
+        feedId: feedId,
+        sessionId: _viewSessionId,
+      );
+      _viewRecordedInSession.add(feedId);
+    } catch (_) {
+      // keep best-effort, no UI error for view tracking
+    } finally {
+      _viewRequestsInFlight.remove(feedId);
+      _pendingViewFeedId = null;
+    }
+  }
+
+  String _generateSessionId() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+
+    // RFC 4122 v4
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-'
+        '${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-'
+        '${hex.substring(16, 20)}-'
+        '${hex.substring(20, 32)}';
   }
 
   // Custom Bottom Navigation

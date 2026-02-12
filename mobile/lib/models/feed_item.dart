@@ -3,6 +3,7 @@ class FeedItem {
   final String dbId;
   final DateTime createdAt;
   final String authorName;
+  final String? authorId;
   final String authorAvatar;
   final String caption;
   final String mediaUrl;
@@ -23,6 +24,7 @@ class FeedItem {
     required this.dbId,
     required this.createdAt,
     required this.authorName,
+    this.authorId,
     required this.authorAvatar,
     required this.caption,
     required this.mediaUrl,
@@ -64,6 +66,7 @@ class FeedItem {
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       authorName: json['author_name'] as String? ?? 'Unknown',
+      authorId: (json['author_id'] as String?)?.trim(),
       authorAvatar: json['author_avatar'] as String? ?? '',
       caption: json['caption'] as String? ?? '',
       mediaUrl: rawMediaUrl,
@@ -89,6 +92,7 @@ class FeedItem {
       'db_id': dbId,
       'created_at': createdAt.toIso8601String(),
       'author_name': authorName,
+      'author_id': authorId,
       'author_avatar': authorAvatar,
       'caption': caption,
       'media_url': mediaUrl,

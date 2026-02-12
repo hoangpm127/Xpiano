@@ -25,7 +25,12 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isGuest = false;
 
   // Categories
-  final List<String> _categories = ['All', 'Grand Piano', 'Upright Piano', 'Digital Piano'];
+  final List<String> _categories = [
+    'All',
+    'Grand Piano',
+    'Upright Piano',
+    'Digital Piano'
+  ];
 
   @override
   void initState() {
@@ -33,7 +38,7 @@ class _BookingScreenState extends State<BookingScreen> {
     _checkAuth();
     _fetchPianos();
   }
-  
+
   void _checkAuth() {
     final user = _supabaseService.currentUser;
     setState(() {
@@ -43,7 +48,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _fetchPianos() async {
     setState(() => _isLoading = true);
-    final pianos = await _supabaseService.getPianos(category: _selectedCategory);
+    final pianos =
+        await _supabaseService.getPianos(category: _selectedCategory);
     setState(() {
       _pianos = pianos;
       _isLoading = false;
@@ -70,12 +76,13 @@ class _BookingScreenState extends State<BookingScreen> {
       Navigator.pop(context); // Go back to feed
       return;
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BookingSheet(piano: piano, supabaseService: _supabaseService),
+      builder: (context) =>
+          BookingSheet(piano: piano, supabaseService: _supabaseService),
     );
   }
 
@@ -86,7 +93,8 @@ class _BookingScreenState extends State<BookingScreen> {
       appBar: AppBar(
         title: Text(
           'Mượn Đàn',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.inter(
+              fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -115,15 +123,18 @@ class _BookingScreenState extends State<BookingScreen> {
                       category,
                       style: GoogleFonts.inter(
                         color: isSelected ? Colors.black : Colors.white70,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                     selected: isSelected,
                     onSelected: (selected) => _onCategorySelected(category),
                     selectedColor: primaryGold,
                     backgroundColor: Colors.white.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     side: BorderSide.none,
                   ),
                 );
@@ -134,9 +145,12 @@ class _BookingScreenState extends State<BookingScreen> {
           // 2. Pianos List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryGold))
+                ? const Center(
+                    child: CircularProgressIndicator(color: primaryGold))
                 : _pianos.isEmpty
-                    ? Center(child: Text("Không tìm thấy đàn nào", style: GoogleFonts.inter(color: Colors.white)))
+                    ? Center(
+                        child: Text("Không tìm thấy đàn nào",
+                            style: GoogleFonts.inter(color: Colors.white)))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: _pianos.length,
@@ -165,14 +179,19 @@ class _BookingScreenState extends State<BookingScreen> {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Image.network(
-              piano.imageUrl.isNotEmpty ? piano.imageUrl : 'https://via.placeholder.com/400x200',
+              piano.imageUrl.isNotEmpty
+                  ? piano.imageUrl
+                  : 'https://via.placeholder.com/400x200',
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(height: 180, color: Colors.grey[800], child: const Icon(Icons.music_note, color: Colors.white)),
+              errorBuilder: (_, __, ___) => Container(
+                  height: 180,
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.music_note, color: Colors.white)),
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -184,7 +203,10 @@ class _BookingScreenState extends State<BookingScreen> {
                     Expanded(
                       child: Text(
                         piano.name,
-                        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -195,7 +217,8 @@ class _BookingScreenState extends State<BookingScreen> {
                         const SizedBox(width: 4),
                         Text(
                           piano.formattedRating,
-                          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                              color: Colors.white, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -212,14 +235,18 @@ class _BookingScreenState extends State<BookingScreen> {
                   children: [
                     Text(
                       piano.formattedPrice,
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: primaryGold),
+                      style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: primaryGold),
                     ),
                     ElevatedButton(
                       onPressed: () => _showBookingSheet(context, piano),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryGold,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                       ),
                       child: const Text('Chọn'),
                     ),
@@ -238,7 +265,8 @@ class BookingSheet extends StatefulWidget {
   final Piano piano;
   final SupabaseService supabaseService;
 
-  const BookingSheet({super.key, required this.piano, required this.supabaseService});
+  const BookingSheet(
+      {super.key, required this.piano, required this.supabaseService});
 
   @override
   State<BookingSheet> createState() => _BookingSheetState();
@@ -270,16 +298,13 @@ class _BookingSheetState extends State<BookingSheet> {
       // Parse time slot
       final timeParts = _selectedTimeSlot!.split(':');
       final hour = int.parse(timeParts[0]);
-      
-      final startTime = DateTime(
-        _selectedDay!.year, 
-        _selectedDay!.month, 
-        _selectedDay!.day, 
-        hour
-      );
-      final endTime = startTime.add(const Duration(hours: 1)); // Default 1 hour booking
 
-      await widget.supabaseService.createBooking(
+      final startTime = DateTime(
+          _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, hour);
+      final endTime =
+          startTime.add(const Duration(hours: 1)); // Default 1 hour booking
+
+      await widget.supabaseService.createBookingAtomic(
         pianoId: widget.piano.id,
         startTime: startTime,
         endTime: endTime,
@@ -292,11 +317,37 @@ class _BookingSheetState extends State<BookingSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        final message = _mapBookingError(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red[400],
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  String _mapBookingError(Object error) {
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+
+    if (lower.contains('booking_conflict') ||
+        lower.contains('khung giờ đã có người đặt') ||
+        lower.contains('already booked') ||
+        lower.contains('conflict')) {
+      return 'Khung giờ đã có người đặt, chọn giờ khác';
+    }
+    if (lower.contains('auth_required') ||
+        lower.contains('not authenticated')) {
+      return 'Vui lòng đăng nhập để đặt lịch';
+    }
+    if (lower.contains('invalid_time_range')) {
+      return 'Khung giờ không hợp lệ';
+    }
+    return 'Đặt lịch thất bại, vui lòng thử lại';
   }
 
   void _showSuccessDialog() {
@@ -313,7 +364,10 @@ class _BookingSheetState extends State<BookingSheet> {
             const SizedBox(height: 16),
             Text(
               'Đặt lịch thành công!',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
@@ -327,9 +381,11 @@ class _BookingSheetState extends State<BookingSheet> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Back to Home (Assuming BookingScreen was pushed)
+              Navigator.pop(
+                  context); // Back to Home (Assuming BookingScreen was pushed)
             },
-            child: Text('Về trang chủ', style: GoogleFonts.inter(color: const Color(0xFFD4AF37))),
+            child: Text('Về trang chủ',
+                style: GoogleFonts.inter(color: const Color(0xFFD4AF37))),
           ),
         ],
       ),
@@ -354,8 +410,12 @@ class _BookingSheetState extends State<BookingSheet> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    widget.piano.imageUrl.isNotEmpty ? widget.piano.imageUrl : 'https://via.placeholder.com/100',
-                    width: 60, height: 60, fit: BoxFit.cover,
+                    widget.piano.imageUrl.isNotEmpty
+                        ? widget.piano.imageUrl
+                        : 'https://via.placeholder.com/100',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -363,17 +423,25 @@ class _BookingSheetState extends State<BookingSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.piano.name, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(widget.piano.formattedPrice, style: GoogleFonts.inter(color: const Color(0xFFD4AF37), fontSize: 14)),
+                      Text(widget.piano.name,
+                          style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16)),
+                      Text(widget.piano.formattedPrice,
+                          style: GoogleFonts.inter(
+                              color: const Color(0xFFD4AF37), fontSize: 14)),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context)),
               ],
             ),
           ),
           const Divider(color: Colors.white10),
-          
+
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -390,34 +458,47 @@ class _BookingSheetState extends State<BookingSheet> {
                       setState(() {
                         _selectedDay = selectedDay;
                         _focusedDay = focusedDay;
-                        _selectedTimeSlot = null; // Reset time slot on date change
+                        _selectedTimeSlot =
+                            null; // Reset time slot on date change
                       });
                     },
                     calendarStyle: const CalendarStyle(
                       defaultTextStyle: TextStyle(color: Colors.white),
                       weekendTextStyle: TextStyle(color: Colors.white70),
                       outsideTextStyle: TextStyle(color: Colors.white24),
-                      selectedDecoration: BoxDecoration(color: Color(0xFFD4AF37), shape: BoxShape.circle),
-                      todayDecoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                      selectedDecoration: BoxDecoration(
+                          color: Color(0xFFD4AF37), shape: BoxShape.circle),
+                      todayDecoration: BoxDecoration(
+                          color: Colors.white24, shape: BoxShape.circle),
                     ),
                     headerStyle: const HeaderStyle(
                       formatButtonVisible: false,
                       titleCentered: true,
-                      titleTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
-                      rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
+                      titleTextStyle: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                      leftChevronIcon:
+                          Icon(Icons.chevron_left, color: Colors.white),
+                      rightChevronIcon:
+                          Icon(Icons.chevron_right, color: Colors.white),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  Text('Chọn khung giờ', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Chọn khung giờ',
+                      style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  
+
                   // Time Slots Grid
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
                       childAspectRatio: 2.2,
                       crossAxisSpacing: 8,
@@ -432,16 +513,23 @@ class _BookingSheetState extends State<BookingSheet> {
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.05),
+                            color: isSelected
+                                ? const Color(0xFFD4AF37)
+                                : Colors.white.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.1)),
+                            border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFFD4AF37)
+                                    : Colors.white.withOpacity(0.1)),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             time,
                             style: GoogleFonts.inter(
                               color: isSelected ? Colors.black : Colors.white,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -453,7 +541,7 @@ class _BookingSheetState extends State<BookingSheet> {
               ),
             ),
           ),
-          
+
           // Bottom Summary Fixed
           Container(
             padding: const EdgeInsets.all(16),
@@ -476,7 +564,10 @@ class _BookingSheetState extends State<BookingSheet> {
                           ),
                           Text(
                             widget.piano.formattedPrice,
-                            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
                           ),
                         ],
                       ),
@@ -485,19 +576,28 @@ class _BookingSheetState extends State<BookingSheet> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: (_selectedDay != null && _selectedTimeSlot != null && !_isProcessing)
+                      onPressed: (_selectedDay != null &&
+                              _selectedTimeSlot != null &&
+                              !_isProcessing)
                           ? _onBookingConfirmed
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD4AF37),
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
                         disabledBackgroundColor: Colors.white12,
                         disabledForegroundColor: Colors.white38,
                       ),
                       child: _isProcessing
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                          : Text('Xác nhận đặt', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.black))
+                          : Text('Xác nhận đặt',
+                              style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ),
                 ],
