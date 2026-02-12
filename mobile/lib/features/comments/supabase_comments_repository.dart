@@ -11,10 +11,11 @@ class SupabaseCommentsRepository implements CommentsRepository {
 
   @override
   Future<List<CommentUI>> fetchComments(String feedId) async {
+    final normalizedFeedId = _normalizeFeedId(feedId);
     final response = await _client
         .from('comments')
         .select('id, feed_id, user_id, content, created_at')
-        .eq('feed_id', feedId)
+        .eq('feed_id', normalizedFeedId)
         .order('created_at', ascending: false);
 
     final rows = List<Map<String, dynamic>>.from(response as List);
@@ -36,6 +37,7 @@ class SupabaseCommentsRepository implements CommentsRepository {
 
   @override
   Future<CommentUI> postComment(String feedId, String text) async {
+    final normalizedFeedId = _normalizeFeedId(feedId);
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('Ban can dang nhap de binh luan.');
@@ -50,7 +52,7 @@ class SupabaseCommentsRepository implements CommentsRepository {
       final inserted = await _client
           .from('comments')
           .insert({
-            'feed_id': feedId,
+            'feed_id': normalizedFeedId,
             'user_id': user.id,
             'content': trimmed,
           })
@@ -169,6 +171,14 @@ class SupabaseCommentsRepository implements CommentsRepository {
   String _fallbackAvatar(String seed) {
     return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seed)}'
         '&background=E5E7EB&color=374151';
+  }
+
+  int _normalizeFeedId(String feedId) {
+    final value = int.tryParse(feedId.trim());
+    if (value == null) {
+      throw Exception('Feed ID khong hop le: $feedId');
+    }
+    return value;
   }
 }
 

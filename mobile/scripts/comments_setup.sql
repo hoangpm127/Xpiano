@@ -1,11 +1,11 @@
--- Setup DB objects for feed comments (social_feed.id is TEXT).
+-- Setup DB objects for feed comments.
 -- Safe to run multiple times.
 
 begin;
 
 create table if not exists public.comments (
   id bigserial primary key,
-  feed_id text not null references public.social_feed(id) on delete cascade,
+  feed_id bigint not null references public.social_feed(id) on delete cascade,
   user_id uuid not null default auth.uid(),
   content text not null,
   created_at timestamptz not null default now()
