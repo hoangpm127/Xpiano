@@ -6,9 +6,11 @@ import '../services/supabase_service.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'teacher_dashboard_screen.dart';
+import 'learner_dashboard_screen.dart';
 import 'teacher_profile_setup_screen.dart';
 import 'admin_debug_screen.dart';
 import 'affiliate_dashboard_screen.dart';
+import 'piano_rental_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,6 +39,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUpgradingRole = false;
   int _adminTapCount = 0;
 
+  String _normalizeRole(String? rawRole) {
+    final role = (rawRole ?? '').trim().toLowerCase();
+    if (role == 'teacher') return 'teacher';
+    if (role == 'learner' || role == 'student') return 'learner';
+    return 'guest';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,25 +63,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = false;
       });
     } else {
+      print('[_checkAuthAndFetch] 👤 User authenticated, fetching profile...');
+      String fetchedRole = 'guest';
       try {
         final profile = await _supabaseService.getMyProfile(refresh: true);
-        _currentRole =
-            (profile['role']?.toString().trim().toLowerCase() ?? 'guest');
-      } catch (_) {
-        _currentRole = 'guest';
+        fetchedRole = _normalizeRole(profile['role']?.toString());
+        print('[_checkAuthAndFetch] 📊 Profile from DB: role=${profile['role']}, normalized=$fetchedRole, full profile: $profile');
+      } catch (e) {
+        print('[_checkAuthAndFetch] ⚠️ Failed to fetch profile: $e');
+        fetchedRole = _normalizeRole(
+          _supabaseService.currentUser?.userMetadata?['role']?.toString(),
+        );
+        print('[_checkAuthAndFetch] 📋 Using metadata role: $fetchedRole');
+      }
+
+      // IMPORTANT: Don't override state if we're already in a more specific role
+      // and this is just a background refresh
+      if (_currentRole == 'teacher' && fetchedRole == 'guest') {
+        print('[_checkAuthAndFetch] ⚠️ Skipping stale data: current=teacher but fetched=guest');
+        setState(() => _isLoading = false);
+        return;
       }
 
       // Check if user is a teacher
       final teacherProfile = await _supabaseService.getTeacherProfile();
-      if (_currentRole == 'teacher' || teacherProfile != null) {
+      print('[_checkAuthAndFetch] 🎓 Teacher profile: ${teacherProfile != null ? "EXISTS" : "NULL"}');
+      if (fetchedRole == 'teacher' || teacherProfile != null) {
+        print('[_checkAuthAndFetch] ✅ Setting as TEACHER, role=$fetchedRole');
         setState(() {
+          _currentRole = fetchedRole;
           _teacherProfile = teacherProfile;
           _isTeacher = true;
           _isLoading = false;
         });
       } else {
+        print('[_checkAuthAndFetch] 👥 Setting as GUEST/LEARNER, role=$fetchedRole');
         // Regular guest/learner user
         setState(() {
+          _currentRole = fetchedRole;
           _isTeacher = false;
           _teacherProfile = null;
         });
@@ -172,45 +200,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleUpgradeRole(String targetRole) async {
+    print('[_handleUpgradeRole] 🎯 Target: $targetRole, Current: $_currentRole');
     if (_isUpgradingRole || _currentRole != 'guest') return;
 
     setState(() => _isUpgradingRole = true);
     try {
       final upgradedRole = await _supabaseService.upgradeRole(targetRole);
-      if (!mounted) return;
+      print('[_handleUpgradeRole] 📬 Got result: $upgradedRole');
+      if (!mounted) {
+        print('[_handleUpgradeRole] ⚠️ Widget not mounted after RPC!');
+        return;
+      }
 
-      setState(() => _currentRole = upgradedRole);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            upgradedRole == 'teacher'
-                ? 'Da nang cap Teacher. Vui long hoan tat ho so giao vien.'
-                : 'Da nang cap Learner thanh cong.',
+      // Update state first
+      setState(() {
+        _currentRole = upgradedRole;
+        _isTeacher = (upgradedRole == 'teacher');
+        print('[_handleUpgradeRole] 🔄 setState: _currentRole = $_currentRole, _isTeacher = $_isTeacher');
+      });
+
+      // Use post-frame callback to ensure widget is stable before showing UI
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          print('[_handleUpgradeRole] ⚠️ Widget not mounted in post-frame callback!');
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              upgradedRole == 'teacher'
+                  ? 'Đã nâng cấp Teacher. Vui lòng hoàn tất hồ sơ giáo viên.'
+                  : 'Đã nâng cấp Learner thành công.',
+            ),
           ),
-        ),
-      );
+        );
 
-      if (upgradedRole == 'teacher') {
+        if (upgradedRole == 'teacher') {
+          print('[_handleUpgradeRole] 📝 Navigating to TeacherProfileSetupScreen...');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TeacherProfileSetupScreen(),
+            ),
+          ).then((_) {
+            print('[_handleUpgradeRole] ⬅️ Returned from TeacherProfileSetupScreen');
+            if (mounted) {
+              print('[_handleUpgradeRole] 🔃 Calling _checkAuthAndFetch...');
+              _checkAuthAndFetch();
+            }
+          });
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString().toLowerCase();
+      String message = 'Nâng cấp role thất bại: $e';
+      bool shouldOpenTeacherSetup = false;
+      if (raw.contains('infinite recursion detected in policy') &&
+          raw.contains('profiles')) {
+        message =
+            'Lỗi cấu hình RLS của bảng profiles. Hãy chạy script mobile/scripts/profiles_rls_recursion_hotfix.sql trong Supabase SQL Editor rồi thử lại.';
+      } else if (raw.contains('role_already_final')) {
+        final match =
+            RegExp(r'role_already_final[:\s]*([a-z_]+)').firstMatch(raw);
+        final finalRole = _normalizeRole(match?.group(1));
+        setState(() => _currentRole = finalRole);
+        if (finalRole == 'teacher') {
+          _isTeacher = true;
+          final existingTeacherProfile =
+              await _supabaseService.getTeacherProfile();
+          shouldOpenTeacherSetup = existingTeacherProfile == null;
+        }
+        message =
+            'Tài khoản đã chốt role: ${finalRole == 'teacher' ? 'Teacher' : 'Learner'}.';
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      if (shouldOpenTeacherSetup && mounted) {
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const TeacherProfileSetupScreen(),
           ),
         );
-        if (mounted) {
-          _checkAuthAndFetch();
-        }
       }
-    } catch (e) {
-      if (!mounted) return;
-      final raw = e.toString().toLowerCase();
-      final message = raw.contains('role_already_final')
-          ? 'Tai khoan da chot role, khong the doi tiep.'
-          : 'Nang cap role that bai: $e';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      _checkAuthAndFetch();
+      if (mounted) {
+        _checkAuthAndFetch();
+      }
     } finally {
       if (mounted) {
         setState(() => _isUpgradingRole = false);
@@ -232,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nang cap vai tro (1 lan duy nhat)',
+            'Nâng cấp vai trò (1 lần duy nhất)',
             style: GoogleFonts.inter(
               color: textDark,
               fontWeight: FontWeight.w700,
@@ -247,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? null
                       : () => _handleUpgradeRole('learner'),
                   child: Text(
-                    'Thanh Learner',
+                    'Thành Learner',
                     style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -269,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          'Thanh Teacher',
+                          'Thành Teacher',
                           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
                         ),
                 ),
@@ -300,6 +379,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const TeacherDashboardScreen();
     }
 
+    // If user is a learner (not guest, not teacher), show Learner Dashboard
+    if (_currentRole == 'learner') {
+      return const LearnerDashboardScreen();
+    }
+
     // Otherwise show normal profile screen with Scaffold
     return Scaffold(
       backgroundColor: backgroundLight,
@@ -311,7 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : Column(
                     children: [
                       // 1. Profile Header
-                      _buildProfileHeader(),
+                      _buildProfileHeader(isGuestRole: _currentRole == 'guest'),
 
                       _buildRoleUpgradeCard(),
 
@@ -510,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader({required bool isGuestRole}) {
     final user = _supabaseService.currentUser;
     final fullName = user?.userMetadata?['full_name'] ?? 'Người dùng';
     final email = user?.email ?? '';
@@ -567,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Thành viên Vàng',
+            isGuestRole ? 'Tài khoản Guest' : 'Thành viên Learner',
             style: GoogleFonts.inter(
               color: primaryGold,
               fontSize: 14,
@@ -578,75 +662,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('${_bookings.length}', 'Bookings'),
-              _buildStatItem('12h', 'Practice'),
-              _buildStatItem('Gold', 'Rank'),
+              _buildStatItem('${_bookings.length}', 'Lịch thuê'),
+              _buildStatItem(isGuestRole ? 'Guest' : 'Learner', 'Vai trò'),
+              _buildStatItem(isGuestRole ? 'Cơ bản' : 'Mở rộng', 'Quyền'),
             ],
           ),
           const SizedBox(height: 24),
-          // Quick Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildQuickActionButton(
-                icon: Icons.attach_money,
-                label: 'Affiliate',
-                onTap: () {
+          if (isGuestRole) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AffiliateDashboardScreen(),
+                      builder: (context) => const PianoRentalScreen(),
                     ),
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryGold,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.shopping_bag_outlined),
+                label: Text(
+                  'Giỏ thuê đàn',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
               ),
-              _buildQuickActionButton(
-                icon: Icons.wallet,
-                label: 'Ví',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Tính năng Ví đang được phát triển',
-                        style: GoogleFonts.inter(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Guest dùng các tính năng cơ bản: Feed, Đăng bài, Chat, Thuê đàn.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: textMuted,
+                fontSize: 12,
+              ),
+            ),
+          ] else ...[
+            // Quick Action Buttons (non-guest)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildQuickActionButton(
+                  icon: Icons.attach_money,
+                  label: 'Affiliate',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AffiliateDashboardScreen(),
                       ),
-                      backgroundColor: primaryGold,
-                    ),
-                  );
-                },
-              ),
-              _buildQuickActionButton(
-                icon: Icons.history,
-                label: 'Lịch sử',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Tính năng Lịch sử đang được phát triển',
-                        style: GoogleFonts.inter(),
+                    );
+                  },
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.wallet,
+                  label: 'Ví',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Tính năng Ví đang được phát triển',
+                          style: GoogleFonts.inter(),
+                        ),
+                        backgroundColor: primaryGold,
                       ),
-                      backgroundColor: primaryGold,
-                    ),
-                  );
-                },
-              ),
-              _buildQuickActionButton(
-                icon: Icons.settings,
-                label: 'Cài đặt',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Tính năng Cài đặt đang được phát triển',
-                        style: GoogleFonts.inter(),
+                    );
+                  },
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.history,
+                  label: 'Lịch sử',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Tính năng Lịch sử đang được phát triển',
+                          style: GoogleFonts.inter(),
+                        ),
+                        backgroundColor: primaryGold,
                       ),
-                      backgroundColor: primaryGold,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+                    );
+                  },
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.settings,
+                  label: 'Cài đặt',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Tính năng Cài đặt đang được phát triển',
+                          style: GoogleFonts.inter(),
+                        ),
+                        backgroundColor: primaryGold,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -878,6 +1004,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Build Teacher Pending/Rejected Status View
   Widget _buildTeacherPendingOrRejected() {
+    if (_teacherProfile == null) {
+      return _buildTeacherSetupRequiredStatus();
+    }
+
     final verificationStatus =
         _teacherProfile?['verification_status'] ?? 'pending';
 
@@ -887,6 +1017,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Rejected or other status
       return _buildRejectedStatus();
     }
+  }
+
+  Widget _buildTeacherSetupRequiredStatus() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cardLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.assignment_outlined,
+                size: 64,
+                color: Color(0xFFD4AF37),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Hoàn tất hồ sơ giáo viên',
+              style: GoogleFonts.inter(
+                color: textDark,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Bạn đã chọn role Teacher nhưng chưa nộp hồ sơ 3 bước.\nHãy hoàn tất để gửi duyệt.',
+              style: GoogleFonts.inter(
+                color: textMuted,
+                fontSize: 16,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TeacherProfileSetupScreen(),
+                    ),
+                  );
+                  if (!mounted) return;
+                  _checkAuthAndFetch();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryGold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Bắt đầu hồ sơ 3 bước',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _handleLogout,
+              icon: const Icon(Icons.logout, size: 18),
+              label: Text(
+                'Đăng xuất',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: textMuted,
+                side: BorderSide(color: borderLight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildPendingStatus() {

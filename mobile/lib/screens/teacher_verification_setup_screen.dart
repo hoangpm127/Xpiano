@@ -18,7 +18,7 @@ class TeacherVerificationSetupScreen extends StatefulWidget {
   final bool teachOffline;
   final Set<String> locations;
   final String? videoDemoPath;
-  
+
   // Data from Step 2
   final int priceOnline;
   final int priceOffline;
@@ -49,22 +49,24 @@ class TeacherVerificationSetupScreen extends StatefulWidget {
   });
 
   @override
-  State<TeacherVerificationSetupScreen> createState() => _TeacherVerificationSetupScreenState();
+  State<TeacherVerificationSetupScreen> createState() =>
+      _TeacherVerificationSetupScreenState();
 }
 
-class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetupScreen> {
+class _TeacherVerificationSetupScreenState
+    extends State<TeacherVerificationSetupScreen> {
   final _idNumberController = TextEditingController();
   final _bankAccountController = TextEditingController();
   final _accountHolderController = TextEditingController();
   final _certificatesController = TextEditingController();
-  
+
   final _supabaseService = SupabaseService();
-  
+
   String? _selectedBank;
   File? _idFrontImage;
   File? _idBackImage;
   final List<File> _certificateImages = [];
-  
+
   bool _isLoading = false;
 
   final List<String> _vietnameseBanks = [
@@ -98,7 +100,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       maxHeight: 1920,
       imageQuality: 85,
     );
-    
+
     if (pickedFile != null) {
       setState(() {
         if (type == 'id_front') {
@@ -117,14 +119,14 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       );
       return;
     }
-    
+
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage(
       maxWidth: 1920,
       maxHeight: 1920,
       imageQuality: 85,
     );
-    
+
     if (pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
@@ -145,34 +147,40 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
   Future<void> _submitProfile() async {
     // Validate required fields
     if (_idNumberController.text.trim().isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số CCCD/CMND')),
       );
       return;
     }
-    
+
     if (_idFrontImage == null || _idBackImage == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chụp ảnh CCCD/CMND mặt trước và mặt sau')),
+        const SnackBar(
+            content: Text('Vui lòng chụp ảnh CCCD/CMND mặt trước và mặt sau')),
       );
       return;
     }
-    
+
     if (_selectedBank == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn ngân hàng')),
       );
       return;
     }
-    
+
     if (_bankAccountController.text.trim().isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số tài khoản')),
       );
       return;
     }
-    
+
     if (_accountHolderController.text.trim().isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên chủ tài khoản')),
       );
@@ -182,20 +190,30 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
     setState(() => _isLoading = true);
 
     try {
+      if (!mounted) return;
+      
       // Check video size before upload
       if (widget.videoDemoPath != null) {
         final videoFile = File(widget.videoDemoPath!);
         final videoSizeMB = await videoFile.length() / (1024 * 1024);
+        if (!mounted) return;
+        
         if (videoSizeMB > 50) {
           if (mounted) {
             final shouldContinue = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF1E1E1E),
-                title: Text('Video quá lớn', style: GoogleFonts.inter(color: Colors.white)),
+                backgroundColor: const Color(0xFFFFFFFF),
+                title: Text(
+                  'Video quá lớn',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 content: Text(
                   'Video của bạn có kích thước ${videoSizeMB.toStringAsFixed(1)}MB (tối đa 50MB).\n\nBạn có muốn tiếp tục không upload video không?',
-                  style: GoogleFonts.inter(color: Colors.white70),
+                  style: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
                 ),
                 actions: [
                   TextButton(
@@ -228,51 +246,133 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       if (widget.avatarPath != null) {
         final avatarFile = File(widget.avatarPath!);
         final avatarBytes = await avatarFile.readAsBytes();
+        if (!mounted) return;
         final avatarExt = widget.avatarPath!.split('.').last;
         avatarUrl = await _supabaseService.uploadImage(
           fileBytes: avatarBytes,
-          fileName: 'avatar_${DateTime.now().millisecondsSinceEpoch}.$avatarExt',
+          fileName:
+              'avatar_${DateTime.now().millisecondsSinceEpoch}.$avatarExt',
           folder: 'avatars',
           timeout: const Duration(seconds: 60),
         );
+        if (!mounted) return;
       }
 
       // Upload video demo (with longer timeout and error handling)
-      if (widget.videoDemoPath != null) {
+      if (widget.videoDemoPath != null && widget.videoDemoPath!.isNotEmpty) {
         try {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Đang upload video... Vui lòng chờ'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-          
+          // Check if file exists first
           final videoFile = File(widget.videoDemoPath!);
-          final videoBytes = await videoFile.readAsBytes();
-          final videoExt = widget.videoDemoPath!.split('.').last;
+          final fileExists = await videoFile.exists();
           
-          videoDemoUrl = await _supabaseService.uploadImage(
-            fileBytes: videoBytes,
-            fileName: 'video_${DateTime.now().millisecondsSinceEpoch}.$videoExt',
-            folder: 'videos',
-            timeout: const Duration(seconds: 120), // 2 minutes for video
-            maxRetries: 2,
-          );
+          if (!fileExists) {
+            print('[Upload] Video file does not exist: ${widget.videoDemoPath}');
+            videoDemoUrl = null; // Skip video upload
+          } else {
+            // Check file size BEFORE uploading
+            final videoBytes = await videoFile.readAsBytes();
+            final fileSizeMB = videoBytes.length / (1024 * 1024);
+            print('[Upload] Video size: ${fileSizeMB.toStringAsFixed(1)}MB');
+            
+            if (fileSizeMB > 50) {
+              print('[Upload] Video too large: ${fileSizeMB.toStringAsFixed(1)}MB');
+              if (!mounted) return;
+              
+              // Show error and ask if user wants to continue
+              bool? shouldContinue;
+              try {
+                shouldContinue = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: const Color(0xFFFFFFFF),
+                    title: Text(
+                      'Video quá lớn',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1A1A1A),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    content: Text(
+                      'Video ${fileSizeMB.toStringAsFixed(1)}MB vượt quá giới hạn 50MB.\n\nBạn có muốn tiếp tục không có video không?',
+                      style: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Hủy'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Tiếp tục không có video'),
+                      ),
+                    ],
+                  ),
+                );
+              } catch (dialogError) {
+                print('[Upload] Dialog error: $dialogError');
+                // Widget disposed, stop processing
+                return;
+              }
+              
+              if (!mounted) return;
+              
+              if (shouldContinue != true) {
+                if (mounted) setState(() => _isLoading = false);
+                return;
+              }
+              videoDemoUrl = null;
+            } else {
+              // File size OK, show upload progress
+              if (mounted) {
+                try {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Đang upload video ${fileSizeMB.toStringAsFixed(1)}MB...'),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                } catch (_) {}
+              }
+
+              if (!mounted) return;
+              final videoExt = widget.videoDemoPath!.split('.').last;
+
+              videoDemoUrl = await _supabaseService.uploadImage(
+                fileBytes: videoBytes,
+                fileName:
+                    'video_${DateTime.now().millisecondsSinceEpoch}.$videoExt',
+                folder: 'videos',
+                timeout: const Duration(seconds: 120), // 2 minutes for video
+                maxRetries: 2,
+              );
+              if (!mounted) return;
+              print('[Upload] Video uploaded successfully: $videoDemoUrl');
+            }
+          }
         } catch (videoError) {
-          print('Video upload error: $videoError');
-          
+          print('[Upload] Video upload error: $videoError');
+          print('[Upload] Error type: ${videoError.runtimeType}');
+
           // Ask user if they want to continue without video
-          if (mounted) {
-            final shouldContinue = await showDialog<bool>(
+          if (!mounted) return;
+          
+          bool? shouldContinue;
+          try {
+            shouldContinue = await showDialog<bool>(
               context: context,
+              barrierDismissible: false,
               builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF1E1E1E),
-                title: Text('Lỗi upload video', style: GoogleFonts.inter(color: Colors.white)),
+                backgroundColor: const Color(0xFFFFFFFF),
+                title: Text(
+                  'Lỗi upload video',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 content: Text(
-                  'Không thể upload video (có thể do mạng chậm hoặc file quá lớn).\n\nBạn có muốn tiếp tục không có video không? Video có thể cập nhật sau.',
-                  style: GoogleFonts.inter(color: Colors.white70),
+                  'Lỗi: ${videoError.toString()}\n\nBạn có muốn tiếp tục không có video không? Video có thể cập nhật sau.',
+                  style: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
                 ),
                 actions: [
                   TextButton(
@@ -286,49 +386,65 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                 ],
               ),
             );
-            
-            if (shouldContinue != true) {
-              setState(() => _isLoading = false);
-              return;
-            }
-            // Continue without video
-            videoDemoUrl = null;
+          } catch (dialogError) {
+            print('[Upload] Dialog error: $dialogError');
+            // Widget disposed, stop processing
+            return;
           }
+          
+          if (!mounted) return;
+
+          if (shouldContinue != true) {
+            if (mounted) setState(() => _isLoading = false);
+            return;
+          }
+          // Continue without video
+          videoDemoUrl = null;
         }
       }
 
       // Upload ID card front
       if (_idFrontImage != null) {
         final idFrontBytes = await _idFrontImage!.readAsBytes();
+        if (!mounted) return;
         final idFrontExt = _idFrontImage!.path.split('.').last;
         idFrontUrl = await _supabaseService.uploadImage(
           fileBytes: idFrontBytes,
-          fileName: 'id_front_${DateTime.now().millisecondsSinceEpoch}.$idFrontExt',
+          fileName:
+              'id_front_${DateTime.now().millisecondsSinceEpoch}.$idFrontExt',
           folder: 'id_cards',
         );
+        if (!mounted) return;
       }
 
       // Upload ID card back
       if (_idBackImage != null) {
         final idBackBytes = await _idBackImage!.readAsBytes();
+        if (!mounted) return;
         final idBackExt = _idBackImage!.path.split('.').last;
         idBackUrl = await _supabaseService.uploadImage(
           fileBytes: idBackBytes,
-          fileName: 'id_back_${DateTime.now().millisecondsSinceEpoch}.$idBackExt',
+          fileName:
+              'id_back_${DateTime.now().millisecondsSinceEpoch}.$idBackExt',
           folder: 'id_cards',
         );
+        if (!mounted) return;
       }
 
       // Upload certificate images
       for (int i = 0; i < _certificateImages.length; i++) {
+        if (!mounted) return;
         final certFile = _certificateImages[i];
         final certBytes = await certFile.readAsBytes();
+        if (!mounted) return;
         final certExt = certFile.path.split('.').last;
         final certUrl = await _supabaseService.uploadImage(
           fileBytes: certBytes,
-          fileName: 'cert_${i}_${DateTime.now().millisecondsSinceEpoch}.$certExt',
+          fileName:
+              'cert_${i}_${DateTime.now().millisecondsSinceEpoch}.$certExt',
           folder: 'certificates',
         );
+        if (!mounted) return;
         certificateUrls.add(certUrl);
       }
 
@@ -342,7 +458,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
         'teach_online': widget.teachOnline,
         'teach_offline': widget.teachOffline,
         'locations': widget.locations.toList(),
-        
+
         // Step 2: Pricing
         'price_online': widget.priceOnline,
         'price_offline': widget.priceOffline,
@@ -351,21 +467,21 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
         'bundle_12_sessions': widget.bundle12Sessions,
         'bundle_12_discount': widget.bundle12Discount,
         'allow_trial_lesson': widget.allowTrialLesson,
-        
+
         // Step 3: Verification
         'id_number': _idNumberController.text.trim(),
         'bank_name': _selectedBank,
         'bank_account': _bankAccountController.text.trim(),
         'account_holder': _accountHolderController.text.trim().toUpperCase(),
         'certificates_description': _certificatesController.text.trim(),
-        
+
         // URLs
         'avatar_url': avatarUrl,
         'video_demo_url': videoDemoUrl,
         'id_front_url': idFrontUrl,
         'id_back_url': idBackUrl,
         'certificate_urls': certificateUrls,
-        
+
         // Status
         'verification_status': 'pending',
       };
@@ -373,7 +489,9 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       // Step 3: Save to Supabase teacher_profiles table
       await _supabaseService.createTeacherProfile(profileData);
 
-      if (mounted) {
+      if (!mounted) return;
+
+      try {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✓ Gửi hồ sơ thành công! Chờ duyệt trong 72h'),
@@ -381,23 +499,36 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
             duration: Duration(seconds: 3),
           ),
         );
-        
-        // Navigate to Teacher Dashboard
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const TeacherDashboardScreen()),
-          (route) => false,
-        );
+      } catch (e) {
+        // Widget disposed during async operation
+        print('[Submit] SnackBar error (widget disposed): $e');
+      }
+
+      if (!mounted) return;
+
+      // Pop back to profile screen (will show pending status UI)
+      // Use delayed navigation to avoid widget lifecycle issues
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      
+      try {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      } catch (e) {
+        print('[Submit] Navigation error: $e');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        try {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } catch (_) {
+          // Widget disposed, silently fail
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -428,9 +559,9 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                   ),
                   const SizedBox(height: 16),
                   _buildIdPhotoUpload(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Section 2: Banking
                   _buildSectionHeader('Tài khoản ngân hàng'),
                   const SizedBox(height: 16),
@@ -449,21 +580,22 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                     placeholder: 'NGUYEN VAN A',
                     textCapitalization: TextCapitalization.characters,
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Section 3: Certificates
                   _buildSectionHeader('Bằng cấp & Thành tích'),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _certificatesController,
                     label: 'Mô tả bằng cấp',
-                    placeholder: 'Mô tả ngắn gọn bằng cấp, giải thưởng âm nhạc của bạn...',
+                    placeholder:
+                        'Mô tả ngắn gọn bằng cấp, giải thưởng âm nhạc của bạn...',
                     maxLines: 5,
                   ),
                   const SizedBox(height: 16),
                   _buildCertificateUpload(),
-                  
+
                   const SizedBox(height: 100),
                 ],
               ),
@@ -484,7 +616,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
         right: 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -496,7 +628,8 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios,
+                color: const Color(0xFF1A1A1A), size: 20),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -508,7 +641,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: const Color(0xFF1A1A1A),
               ),
             ),
           ),
@@ -538,7 +671,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       style: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: const Color(0xFF1A1A1A),
       ),
     );
   }
@@ -559,7 +692,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 8),
@@ -568,21 +701,21 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
           maxLines: maxLines,
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: GoogleFonts.inter(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.3),
             ),
             filled: true,
-            fillColor: const Color(0xFF1E1E1E),
+            fillColor: const Color(0xFFFFFFFF),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -607,31 +740,32 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
+            color: const Color(0xFFFFFFFF),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1),
             ),
           ),
           child: DropdownButtonFormField<String>(
             value: _selectedBank,
-            dropdownColor: const Color(0xFF1E1E1E),
+            dropdownColor: const Color(0xFFFFFFFF),
             decoration: InputDecoration(
               hintText: 'Chọn ngân hàng',
               hintStyle: GoogleFonts.inter(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.black.withOpacity(0.3),
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-            style: GoogleFonts.inter(color: Colors.white),
+            style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
             items: _vietnameseBanks.map((bank) {
               return DropdownMenuItem(
                 value: bank,
@@ -679,7 +813,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
       child: Container(
         height: 150,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: const Color(0xFFD4AF37),
@@ -708,7 +842,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                     label,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -725,7 +859,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: const Color(0xFFFFFFFF),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFFD4AF37),
@@ -746,7 +880,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -754,14 +888,14 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                   'JPG/PNG • Tối đa 5 ảnh',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.black.withOpacity(0.5),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        
+
         // Display selected images
         if (_certificateImages.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -795,7 +929,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
                         ),
                         child: const Icon(
                           Icons.close,
-                          color: Colors.white,
+                          color: const Color(0xFF1A1A1A),
                           size: 16,
                         ),
                       ),
@@ -819,7 +953,7 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -837,14 +971,14 @@ class _TeacherVerificationSetupScreenState extends State<TeacherVerificationSetu
               Icon(
                 Icons.schedule,
                 size: 16,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.black.withOpacity(0.5),
               ),
               const SizedBox(width: 8),
               Text(
                 'Hồ sơ sẽ được duyệt trong vòng 72 giờ làm việc.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.5),
                 ),
               ),
             ],

@@ -128,13 +128,14 @@ class SupabaseService {
       throw Exception('User not authenticated');
     }
 
-    final existing = await _client
+    final existingRows = await _client
         .from('profiles')
         .select()
         .eq('user_id', user.id)
-        .maybeSingle();
-    if (existing != null) {
-      _cachedProfile = Map<String, dynamic>.from(existing);
+        .order('updated_at', ascending: false)
+        .limit(1);
+    if (existingRows.isNotEmpty) {
+      _cachedProfile = Map<String, dynamic>.from(existingRows.first as Map);
       return _cachedProfile!;
     }
 
@@ -164,15 +165,16 @@ class SupabaseService {
       return _cachedProfile!;
     }
 
-    final profile = await _client
+    final rows = await _client
         .from('profiles')
         .select()
         .eq('user_id', user.id)
-        .maybeSingle();
-    if (profile == null) {
+        .order('updated_at', ascending: false)
+        .limit(1);
+    if (rows.isEmpty) {
       return await ensureProfile();
     }
-    _cachedProfile = Map<String, dynamic>.from(profile);
+    _cachedProfile = Map<String, dynamic>.from(rows.first as Map);
     return _cachedProfile!;
   }
 
@@ -208,6 +210,7 @@ class SupabaseService {
 
   Future<String> upgradeRole(String role) async {
     final normalizedRole = _normalizeRole(role);
+    print('[upgradeRole] 🚀 Input role: $role, Normalized: $normalizedRole');
     if (normalizedRole == 'guest') {
       throw Exception('Target role must be learner or teacher');
     }
@@ -215,9 +218,13 @@ class SupabaseService {
       'upgrade_role',
       params: {'p_role': normalizedRole},
     );
+    print('[upgradeRole] 📥 RPC result: $result (type: ${result.runtimeType})');
     _cachedProfile = null;
     await refreshProfileCache();
-    return result?.toString() ?? normalizedRole;
+    print('[upgradeRole] 💾 Cache refreshed. Current cached role: ${_cachedProfile?['role']}');
+    final returnValue = result?.toString() ?? normalizedRole;
+    print('[upgradeRole] ✅ Returning: $returnValue');
+    return returnValue;
   }
 
   // --- OTP METHODS ---
@@ -322,13 +329,17 @@ class SupabaseService {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
-    final data = {
+    final data = <String, dynamic>{
       'user_id': userId,
       ...profileData,
     };
+    data['verification_status'] = 'pending';
 
-    final response =
-        await _client.from('teacher_profiles').insert(data).select().single();
+    final response = await _client
+        .from('teacher_profiles')
+        .upsert(data, onConflict: 'user_id')
+        .select()
+        .single();
 
     return response as Map<String, dynamic>;
   }
@@ -1238,6 +1249,15 @@ class SupabaseService {
   /// Approve all pending teacher profiles (for testing/admin purposes)
   Future<Map<String, dynamic>> approveAllPendingTeachers() async {
     try {
+      final rpcResult = await _client.rpc('admin_approve_all_pending_teachers');
+      if (rpcResult is Map) {
+        return Map<String, dynamic>.from(rpcResult);
+      }
+    } catch (_) {
+      // Fallback to direct query for legacy environments.
+    }
+
+    try {
       // Get count of pending teachers
       final pendingTeachers = await _client
           .from('teacher_profiles')
@@ -1277,15 +1297,375 @@ class SupabaseService {
   /// Get all teacher profiles with their verification status (for admin)
   Future<List<Map<String, dynamic>>> getAllTeacherProfiles() async {
     try {
+      final rpcResponse = await _client.rpc('admin_list_teacher_profiles');
+      if (rpcResponse is List) {
+        return List<Map<String, dynamic>>.from(rpcResponse);
+      }
+    } catch (_) {
+      // Fallback to direct query for legacy environments.
+    }
+
+    try {
       final response = await _client
           .from('teacher_profiles')
           .select()
           .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(response as List);
     } catch (e) {
       print('Error fetching all teacher profiles: $e');
       return [];
+    }
+  }
+
+  // ========== LEARNER DASHBOARD METHODS ==========
+
+  /// Get learner statistics (bookings, rentals, spending, etc.)
+  Future<dynamic> getLearnerStats() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return null;
+
+      // Get stats from multiple tables
+      final bookingsCompleted = await _client
+          .from('bookings')
+          .select('id')
+          .eq('learner_id', userId)
+          .eq('status', 'completed')
+          .count();
+
+      final bookingsUpcoming = await _client
+          .from('bookings')
+          .select('id')
+          .eq('learner_id', userId)
+          .inFilter('status', ['confirmed', 'pending'])
+          .gte('start_time', DateTime.now().toIso8601String())
+          .count();
+
+      // Active rentals (if rentals table exists)
+      int activeRentals = 0;
+      try {
+        final rentalsResponse = await _client
+            .from('rentals')
+            .select('id')
+            .eq('learner_id', userId)
+            .eq('status', 'active')
+            .count();
+        activeRentals = rentalsResponse;
+      } catch (_) {
+        // Table might not exist yet
+      }
+
+      // Total spent (sum of all completed bookings)
+      double totalSpent = 0;
+      try {
+        final paymentsResponse = await _client
+            .from('bookings')
+            .select('price')
+            .eq('learner_id', userId)
+            .eq('status', 'completed');
+        
+        if (paymentsResponse is List) {
+          for (var item in paymentsResponse) {
+            totalSpent += (item['price'] ?? 0).toDouble();
+          }
+        }
+      } catch (_) {}
+
+      // Affiliate earnings (placeholder - implement when referral system exists)
+      double affiliateEarnings = 0;
+
+      return {
+        'completed_bookings': bookingsCompleted,
+        'upcoming_bookings': bookingsUpcoming,
+        'active_rentals': activeRentals,
+        'total_spent': totalSpent,
+        'affiliate_earnings': affiliateEarnings,
+        'courses_enrolled': 0, // TODO: Implement when course enrollment exists
+      };
+    } catch (e) {
+      print('[getLearnerStats] Error: $e');
+      return null;
+    }
+  }
+
+  /// Get learner's upcoming bookings
+  Future<List<Map<String, dynamic>>> getLearnerUpcomingBookings() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return [];
+
+      final response = await _client
+          .from('bookings')
+          .select('''
+            *,
+            teacher:teacher_id (
+              id,
+              profiles!inner (
+                full_name,
+                avatar_url
+              )
+            )
+          ''')
+          .eq('learner_id', userId)
+          .inFilter('status', ['confirmed', 'pending'])
+          .gte('start_time', DateTime.now().toIso8601String())
+          .order('start_time', ascending: true)
+          .limit(10);
+
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response).map((booking) {
+          final teacher = booking['teacher'];
+          final profile = teacher?['profiles'];
+          
+          return {
+            'id': booking['id'],
+            'teacher_id': booking['teacher_id'],
+            'teacher_name': profile?['full_name'] ?? 'Unknown',
+            'teacher_avatar': profile?['avatar_url'],
+            'start_time': booking['start_time'],
+            'duration': booking['duration'] ?? 60,
+            'status': booking['status'],
+            'price': booking['price'],
+          };
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('[getLearnerUpcomingBookings] Error: $e');
+      return [];
+    }
+  }
+
+  /// Get learner's completed bookings
+  Future<List<Map<String, dynamic>>> getLearnerCompletedBookings() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return [];
+
+      final response = await _client
+          .from('bookings')
+          .select('''
+            *,
+            teacher:teacher_id (
+              id,
+              profiles!inner (
+                full_name,
+                avatar_url
+              )
+            )
+          ''')
+          .eq('learner_id', userId)
+          .eq('status', 'completed')
+          .order('start_time', ascending: false)
+          .limit(50);
+
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response).map((booking) {
+          final teacher = booking['teacher'];
+          final profile = teacher?['profiles'];
+          
+          return {
+            'id': booking['id'],
+            'teacher_id': booking['teacher_id'],
+            'teacher_name': profile?['full_name'] ?? 'Unknown',
+            'teacher_avatar': profile?['avatar_url'],
+            'start_time': booking['start_time'],
+            'duration': booking['duration'] ?? 60,
+            'price': booking['price'],
+          };
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('[getLearnerCompletedBookings] Error: $e');
+      return [];
+    }
+  }
+
+  /// Get learner's active rentals
+  Future<List<Map<String, dynamic>>> getLearnerActiveRentals() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return [];
+
+      final response = await _client
+          .from('rentals')
+          .select('''
+            *,
+            piano:piano_id (
+              id,
+              name,
+              brand,
+              model,
+              monthly_price,
+              images
+            )
+          ''')
+          .eq('learner_id', userId)
+          .eq('status', 'active')
+          .order('created_at', ascending: false);
+
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response).map((rental) {
+          final piano = rental['piano'];
+          
+          return {
+            'id': rental['id'],
+            'piano_id': rental['piano_id'],
+            'piano_name': '${piano?['brand'] ?? ''} ${piano?['model'] ?? 'Piano'}',
+            'start_date': rental['start_date'],
+            'end_date': rental['end_date'],
+            'monthly_price': piano?['monthly_price'] ?? 0,
+            'status': rental['status'],
+          };
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('[getLearnerActiveRentals] Error: $e (table might not exist yet)');
+      return [];
+    }
+  }
+
+  /// Get learner's enrolled courses (teachers they're learning from)
+  Future<List<Map<String, dynamic>>> getLearnerEnrolledCourses() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return [];
+
+      // Get unique teachers from bookings
+      final response = await _client
+          .from('bookings')
+          .select('''
+            teacher_id,
+            teacher:teacher_id (
+              id,
+              profiles!inner (
+                full_name,
+                avatar_url
+              ),
+              teacher_profiles!inner (
+                specialization,
+                hourly_rate
+              )
+            )
+          ''')
+          .eq('learner_id', userId)
+          .order('created_at', ascending: false);
+
+      if (response is List) {
+        // Get unique teachers
+        final seenTeachers = <String>{};
+        final courses = <Map<String, dynamic>>[];
+
+        for (var booking in response) {
+          final teacherId = booking['teacher_id'];
+          if (teacherId == null || seenTeachers.contains(teacherId)) {
+            continue;
+          }
+          seenTeachers.add(teacherId);
+
+          final teacher = booking['teacher'];
+          final profile = teacher?['profiles'];
+          final teacherProfile = teacher?['teacher_profiles'];
+          
+          courses.add({
+            'teacher_id': teacherId,
+            'teacher_name': profile?['full_name'] ?? 'Unknown',
+            'teacher_avatar': profile?['avatar_url'],
+            'course_name': teacherProfile?['specialization'] ?? 'Piano Course',
+            'hourly_rate': teacherProfile?['hourly_rate'] ?? 0,
+          });
+        }
+
+        return courses;
+      }
+
+      return [];
+    } catch (e) {
+      print('[getLearnerEnrolledCourses] Error: $e');
+      return [];
+    }
+  }
+
+  /// Get learner's payment history
+  Future<List<Map<String, dynamic>>> getLearnerPaymentHistory() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) return [];
+
+      // Get all completed bookings as payment history
+      final response = await _client
+          .from('bookings')
+          .select('''
+            id,
+            teacher_id,
+            start_time,
+            price,
+            status,
+            created_at,
+            teacher:teacher_id (
+              profiles!inner (
+                full_name
+              )
+            )
+          ''')
+          .eq('learner_id', userId)
+          .eq('status', 'completed')
+          .order('start_time', ascending: false)
+          .limit(100);
+
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response).map((payment) {
+          final teacher = payment['teacher'];
+          final profile = teacher?['profiles'];
+          
+          return {
+            'id': payment['id'],
+            'type': 'booking',
+            'description': 'Buổi học với ${profile?['full_name'] ?? 'Unknown'}',
+            'amount': payment['price'] ?? 0,
+            'date': payment['start_time'],
+            'created_at': payment['created_at'],
+          };
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('[getLearnerPaymentHistory] Error: $e');
+      return [];
+    }
+  }
+
+  /// Get learner's affiliate summary (placeholder for future referral system)
+  Future<Map<String, dynamic>> getLearnerAffiliateSummary() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) {
+        return {
+          'total_earnings': 0.0,
+          'total_referrals': 0,
+          'pending_earnings': 0.0,
+        };
+      }
+
+      // TODO: Implement when referral/affiliate table exists
+      return {
+        'total_earnings': 0.0,
+        'total_referrals': 0,
+        'pending_earnings': 0.0,
+      };
+    } catch (e) {
+      print('[getLearnerAffiliateSummary] Error: $e');
+      return {
+        'total_earnings': 0.0,
+        'total_referrals': 0,
+        'pending_earnings': 0.0,
+      };
     }
   }
 }

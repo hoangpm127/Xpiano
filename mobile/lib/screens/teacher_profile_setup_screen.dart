@@ -10,30 +10,40 @@ class TeacherProfileSetupScreen extends StatefulWidget {
   const TeacherProfileSetupScreen({super.key});
 
   @override
-  State<TeacherProfileSetupScreen> createState() => _TeacherProfileSetupScreenState();
+  State<TeacherProfileSetupScreen> createState() =>
+      _TeacherProfileSetupScreenState();
 }
 
 class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
   final _fullNameController = TextEditingController();
   final _bioController = TextEditingController();
-  
+
   File? _avatarImage;
   File? _videoDemo;
-  
-  final List<String> _specializations = ['Piano', 'Lý thuyết nhạc', 'Thanh nhạc'];
+
+  final List<String> _specializations = [
+    'Piano',
+    'Lý thuyết nhạc',
+    'Thanh nhạc'
+  ];
   final Set<String> _selectedSpecializations = {};
-  
+
   int _yearsExperience = 0;
-  
+
   bool _teachOnline = false;
   bool _teachOffline = false;
-  
+
   final List<String> _availableLocations = [
-    'Cầu Giấy', 'Ba Đình', 'Đống Đa', 'Hoàn Kiếm', 
-    'Hai Bà Trưng', 'Thanh Xuân', 'Tây Hồ'
+    'Cầu Giấy',
+    'Ba Đình',
+    'Đống Đa',
+    'Hoàn Kiếm',
+    'Hai Bà Trưng',
+    'Thanh Xuân',
+    'Tây Hồ'
   ];
   final Set<String> _selectedLocations = {};
-  
+
   bool _isLoading = false;
 
   Future<void> _pickAvatar() async {
@@ -44,7 +54,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
       maxHeight: 1024,
       imageQuality: 85,
     );
-    
+
     if (pickedFile != null) {
       setState(() {
         _avatarImage = File(pickedFile.path);
@@ -58,7 +68,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
       source: ImageSource.gallery,
       maxDuration: const Duration(seconds: 60),
     );
-    
+
     if (pickedFile != null) {
       // Check file size (50MB max)
       final file = File(pickedFile.path);
@@ -71,7 +81,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
         }
         return;
       }
-      
+
       setState(() {
         _videoDemo = file;
       });
@@ -86,21 +96,21 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
       );
       return;
     }
-    
+
     if (_selectedSpecializations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn ít nhất 1 chuyên môn')),
       );
       return;
     }
-    
+
     if (!_teachOnline && !_teachOffline) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn hình thức dạy')),
       );
       return;
     }
-    
+
     // Navigate to Step 2 with data
     Navigator.push(
       context,
@@ -128,7 +138,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
         children: [
           // 1. Sticky Header
           _buildHeader(),
-          
+
           // 2. Scrollable Content
           Expanded(
             child: SingleChildScrollView(
@@ -138,52 +148,52 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 children: [
                   // Avatar Upload
                   _buildAvatarSection(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Full Name
                   _buildTextField(
                     controller: _fullNameController,
                     label: 'Họ và tên',
                     placeholder: 'Nhập họ và tên của bạn',
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Specialization
                   _buildSpecializationSection(),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Experience
                   _buildExperienceSection(),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Bio
                   _buildBioSection(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Teaching Mode
                   _buildTeachingModeSection(),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Location
                   _buildLocationSection(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Video Demo
                   _buildVideoDemoSection(),
-                  
+
                   const SizedBox(height: 100), // Space for sticky footer
                 ],
               ),
             ),
           ),
-          
+
           // 3. Sticky Footer
           _buildFooter(),
         ],
@@ -200,7 +210,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
         right: 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -213,14 +223,15 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
         children: [
           // Back Button
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios,
+                color: const Color(0xFF1A1A1A), size: 20),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Title
           Expanded(
             child: Text(
@@ -228,11 +239,11 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: const Color(0xFF1A1A1A),
               ),
             ),
           ),
-          
+
           // Step Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -265,7 +276,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF2A2A2A),
+              color: const Color(0xFFF1F1F1),
               border: Border.all(
                 color: const Color(0xFFD4AF37).withOpacity(0.3),
                 width: 2,
@@ -281,13 +292,13 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 : Icon(
                     Icons.person_outline,
                     size: 50,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.black.withOpacity(0.3),
                   ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Upload Button
         OutlinedButton.icon(
           onPressed: _pickAvatar,
@@ -305,15 +316,15 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Helper Text
         Text(
           'Ảnh rõ mặt, nền sáng',
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.black.withOpacity(0.5),
           ),
         ),
       ],
@@ -334,34 +345,35 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: GoogleFonts.inter(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.3),
             ),
             filled: true,
-            fillColor: const Color(0xFF1E1E1E),
+            fillColor: const Color(0xFFFFFFFF),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
         ),
       ],
@@ -377,7 +389,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 12),
@@ -399,15 +411,15 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 });
               },
               labelStyle: GoogleFonts.inter(
-                color: isSelected ? Colors.black : Colors.white,
+                color: isSelected ? Colors.black : const Color(0xFF4A4A4A),
                 fontWeight: FontWeight.w500,
               ),
-              backgroundColor: const Color(0xFF2A2A2A),
+              backgroundColor: const Color(0xFFF1F1F1),
               selectedColor: const Color(0xFFD4AF37),
               side: BorderSide(
-                color: isSelected 
-                    ? const Color(0xFFD4AF37) 
-                    : Colors.white.withOpacity(0.2),
+                color: isSelected
+                    ? const Color(0xFFD4AF37)
+                    : Colors.black.withOpacity(0.2),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -428,7 +440,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 12),
@@ -446,14 +458,14 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
               color: const Color(0xFFD4AF37),
               iconSize: 36,
             ),
-            
+
             const SizedBox(width: 24),
-            
+
             // Display
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: const Color(0xFFFFFFFF),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: const Color(0xFFD4AF37).withOpacity(0.3),
@@ -464,13 +476,13 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: const Color(0xFF1A1A1A),
                 ),
               ),
             ),
-            
+
             const SizedBox(width: 24),
-            
+
             // Plus Button
             IconButton(
               onPressed: () {
@@ -497,7 +509,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 8),
@@ -505,22 +517,22 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           controller: _bioController,
           maxLines: 5,
           maxLength: 300,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
           decoration: InputDecoration(
             hintText: 'Vui lòng viết vài câu về bản thân, phong cách dạy...',
             hintStyle: GoogleFonts.inter(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.3),
               fontSize: 13,
             ),
             filled: true,
-            fillColor: const Color(0xFF1E1E1E),
+            fillColor: const Color(0xFFFFFFFF),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -542,7 +554,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 12),
@@ -574,7 +586,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           'Bạn có thể nhận cả Online & Offline',
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.black.withOpacity(0.5),
           ),
         ),
       ],
@@ -592,10 +604,14 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD4AF37).withOpacity(0.15) : const Color(0xFF1E1E1E),
+          color: isSelected
+              ? const Color(0xFFD4AF37).withOpacity(0.15)
+              : const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.1),
+            color: isSelected
+                ? const Color(0xFFD4AF37)
+                : Colors.black.withOpacity(0.1),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -603,14 +619,18 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.5),
+              color: isSelected
+                  ? const Color(0xFFD4AF37)
+                  : Colors.black.withOpacity(0.5),
               size: 28,
             ),
             const SizedBox(height: 8),
             Text(
               label,
               style: GoogleFonts.inter(
-                color: isSelected ? const Color(0xFFD4AF37) : Colors.white,
+                color: isSelected
+                    ? const Color(0xFFD4AF37)
+                    : const Color(0xFF4A4A4A),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -629,7 +649,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 12),
@@ -652,15 +672,15 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                   });
                 },
                 labelStyle: GoogleFonts.inter(
-                  color: isSelected ? Colors.black : Colors.white,
+                  color: isSelected ? Colors.black : const Color(0xFF4A4A4A),
                   fontSize: 13,
                 ),
-                backgroundColor: const Color(0xFF2A2A2A),
+                backgroundColor: const Color(0xFFF1F1F1),
                 selectedColor: const Color(0xFFD4AF37),
                 side: BorderSide(
-                  color: isSelected 
-                      ? const Color(0xFFD4AF37) 
-                      : Colors.white.withOpacity(0.2),
+                  color: isSelected
+                      ? const Color(0xFFD4AF37)
+                      : Colors.black.withOpacity(0.2),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -687,7 +707,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                   'Tính năng thêm khu vực tùy chỉnh sẽ được mở trong bản tiếp theo.',
                 );
               },
-              backgroundColor: const Color(0xFF2A2A2A),
+              backgroundColor: const Color(0xFFF1F1F1),
               side: const BorderSide(color: Color(0xFFD4AF37)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -708,7 +728,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 12),
@@ -717,7 +737,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: const Color(0xFFFFFFFF),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: const Color(0xFFD4AF37),
@@ -743,15 +763,15 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _videoDemo != null 
-                      ? '✓ Video đã chọn' 
+                  _videoDemo != null
+                      ? '✓ Video đã chọn'
                       : 'Tải video dạy thử 30-60s',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: _videoDemo != null 
-                        ? const Color(0xFFD4AF37) 
-                        : Colors.white,
+                    color: _videoDemo != null
+                        ? const Color(0xFFD4AF37)
+                        : const Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -759,7 +779,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                   'MP4/MOV • Tối đa 50MB',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.black.withOpacity(0.5),
                   ),
                 ),
                 if (_videoDemo != null) ...[
@@ -768,7 +788,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
                     _videoDemo!.path.split('/').last,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -791,7 +811,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -840,7 +860,7 @@ class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
             'Có thể chỉnh sửa sau',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.black.withOpacity(0.5),
             ),
           ),
         ],

@@ -29,23 +29,24 @@ class TeacherPricingSetupScreen extends StatefulWidget {
   });
 
   @override
-  State<TeacherPricingSetupScreen> createState() => _TeacherPricingSetupScreenState();
+  State<TeacherPricingSetupScreen> createState() =>
+      _TeacherPricingSetupScreenState();
 }
 
 class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
   // Pricing data
   int _priceOnline = 250000; // 250k VND default
   int _priceOffline = 350000; // 350k VND default
-  
+
   // Bundle packages
   int _bundle8Sessions = 8;
   double _bundle8Discount = 10; // 10%
-  
+
   int _bundle12Sessions = 12;
   double _bundle12Discount = 15; // 15%
-  
+
   bool _allowTrialLesson = true; // Default enabled
-  
+
   bool _isLoading = false;
 
   void _showEditPriceDialog({
@@ -54,39 +55,39 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
     required Function(int) onSave,
   }) {
     final controller = TextEditingController(text: currentPrice.toString());
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: const Color(0xFFFFFFFF),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         title: Text(
           title,
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
             fontWeight: FontWeight.bold,
           ),
         ),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
           decoration: InputDecoration(
             labelText: 'Giá (VNĐ)',
-            labelStyle: GoogleFonts.inter(color: Colors.white70),
+            labelStyle: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
             suffixText: 'đ',
             suffixStyle: GoogleFonts.inter(color: const Color(0xFFD4AF37)),
             filled: true,
-            fillColor: const Color(0xFF121212),
+            fillColor: const Color(0xFFF8F8F8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFD4AF37)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.2)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -99,7 +100,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Hủy',
-              style: GoogleFonts.inter(color: Colors.white70),
+              style: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
             ),
           ),
           TextButton(
@@ -133,20 +134,22 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
     required double currentDiscount,
     required Function(int, double) onSave,
   }) {
-    final sessionsController = TextEditingController(text: currentSessions.toString());
-    final discountController = TextEditingController(text: currentDiscount.toInt().toString());
-    
+    final sessionsController =
+        TextEditingController(text: currentSessions.toString());
+    final discountController =
+        TextEditingController(text: currentDiscount.toInt().toString());
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: const Color(0xFFFFFFFF),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         title: Text(
           title,
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: const Color(0xFF1A1A1A),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -156,23 +159,24 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
             TextField(
               controller: sessionsController,
               keyboardType: TextInputType.number,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
               decoration: InputDecoration(
                 labelText: 'Số buổi',
-                labelStyle: GoogleFonts.inter(color: Colors.white70),
+                labelStyle: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
                 suffixText: 'buổi',
                 filled: true,
-                fillColor: const Color(0xFF121212),
+                fillColor: const Color(0xFFF8F8F8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  borderSide: BorderSide(color: Colors.black.withOpacity(0.2)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFD4AF37), width: 2),
                 ),
               ),
             ),
@@ -180,24 +184,25 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
             TextField(
               controller: discountController,
               keyboardType: TextInputType.number,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: const Color(0xFF1A1A1A)),
               decoration: InputDecoration(
                 labelText: 'Giảm giá',
-                labelStyle: GoogleFonts.inter(color: Colors.white70),
+                labelStyle: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
                 suffixText: '%',
                 suffixStyle: GoogleFonts.inter(color: const Color(0xFFD4AF37)),
                 filled: true,
-                fillColor: const Color(0xFF121212),
+                fillColor: const Color(0xFFF8F8F8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  borderSide: BorderSide(color: Colors.black.withOpacity(0.2)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 2),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFD4AF37), width: 2),
                 ),
               ),
             ),
@@ -208,19 +213,23 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Hủy',
-              style: GoogleFonts.inter(color: Colors.white70),
+              style: GoogleFonts.inter(color: const Color(0xFF6B6B6B)),
             ),
           ),
           TextButton(
             onPressed: () {
               final sessions = int.tryParse(sessionsController.text);
               final discount = double.tryParse(discountController.text);
-              if (sessions != null && sessions > 0 && discount != null && discount >= 0) {
+              if (sessions != null &&
+                  sessions > 0 &&
+                  discount != null &&
+                  discount >= 0) {
                 onSave(sessions, discount);
                 Navigator.pop(context);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập thông tin hợp lệ')),
+                  const SnackBar(
+                      content: Text('Vui lòng nhập thông tin hợp lệ')),
                 );
               }
             },
@@ -274,7 +283,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
         children: [
           // Header
           _buildHeader(),
-          
+
           // Content
           Expanded(
             child: SingleChildScrollView(
@@ -293,13 +302,14 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                       _showEditPriceDialog(
                         title: 'Chỉnh sửa giá Online',
                         currentPrice: _priceOnline,
-                        onSave: (newPrice) => setState(() => _priceOnline = newPrice),
+                        onSave: (newPrice) =>
+                            setState(() => _priceOnline = newPrice),
                       );
                     },
                   ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1, end: 0),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Offline 1-1 Card
                   _buildPricingCard(
                     title: '1-1 (Offline)',
@@ -309,25 +319,26 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                       _showEditPriceDialog(
                         title: 'Chỉnh sửa giá Offline',
                         currentPrice: _priceOffline,
-                        onSave: (newPrice) => setState(() => _priceOffline = newPrice),
+                        onSave: (newPrice) =>
+                            setState(() => _priceOffline = newPrice),
                       );
                     },
                   ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Section Title
                   Text(
                     'Gói học tiết kiệm',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: const Color(0xFF1A1A1A),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Bundle 8 Sessions
                   _buildBundleCard(
                     title: 'Gói $_bundle8Sessions buổi',
@@ -347,9 +358,9 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                       );
                     },
                   ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1, end: 0),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Bundle 12 Sessions
                   _buildBundleCard(
                     title: 'Gói $_bundle12Sessions buổi',
@@ -369,18 +380,18 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                       );
                     },
                   ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1, end: 0),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Trial Lesson Toggle
                   _buildTrialLessonCard().animate().fadeIn(delay: 500.ms),
-                  
+
                   const SizedBox(height: 100), // Space for footer
                 ],
               ),
             ),
           ),
-          
+
           // Footer
           _buildFooter(),
         ],
@@ -397,7 +408,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
         right: 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -410,14 +421,15 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
         children: [
           // Back Button
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios,
+                color: const Color(0xFF1A1A1A), size: 20),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Title
           Expanded(
             child: Text(
@@ -425,37 +437,37 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: const Color(0xFF1A1A1A),
               ),
             ),
           ),
-          
+
           // Info Icon
           IconButton(
             icon: Icon(
               Icons.info_outline,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.black.withOpacity(0.5),
               size: 22,
             ),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  backgroundColor: const Color(0xFF1E1E1E),
+                  backgroundColor: const Color(0xFFFFFFFF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                   title: Text(
                     'Thông tin giá',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: const Color(0xFF1A1A1A),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   content: Text(
                     'Đặt giá phù hợp để thu hút học viên. Bạn có thể thay đổi bất cứ lúc nào trong phần cài đặt.',
                     style: GoogleFonts.inter(
-                      color: Colors.white70,
+                      color: const Color(0xFF6B6B6B),
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -476,9 +488,9 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               );
             },
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Step Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -512,7 +524,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.3),
@@ -532,17 +544,18 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
               ),
-              
+
               // Badge (if provided)
               if (badge != null) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: badgeColor ?? const Color(0xFF2A2A2A),
+                    color: badgeColor ?? const Color(0xFFF1F1F1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -550,13 +563,13 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: badgeTextColor ?? Colors.white,
+                      color: badgeTextColor ?? const Color(0xFF1A1A1A),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
               ],
-              
+
               // Edit Button
               OutlinedButton.icon(
                 onPressed: onEdit,
@@ -566,9 +579,10 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   style: GoogleFonts.inter(fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  foregroundColor: const Color(0xFF1A1A1A),
+                  side: BorderSide(color: Colors.black.withOpacity(0.3)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
@@ -578,9 +592,9 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Price Row
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -600,13 +614,13 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   '/ 60 phút',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.black.withOpacity(0.6),
                   ),
                 ),
               ),
             ],
           ),
-          
+
           // Subtitle
           if (subtitle != null) ...[
             const SizedBox(height: 8),
@@ -614,7 +628,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               subtitle,
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.black.withOpacity(0.5),
               ),
             ),
           ],
@@ -632,7 +646,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.3),
@@ -652,14 +666,15 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
               ),
-              
+
               // Discount Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -676,9 +691,9 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Edit Button
               OutlinedButton.icon(
                 onPressed: onEdit,
@@ -688,9 +703,10 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   style: GoogleFonts.inter(fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  foregroundColor: const Color(0xFF1A1A1A),
+                  side: BorderSide(color: Colors.black.withOpacity(0.3)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
@@ -700,15 +716,15 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Subtitle
           Text(
             subtitle,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.black.withOpacity(0.5),
             ),
           ),
         ],
@@ -720,7 +736,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37).withOpacity(0.3),
@@ -739,7 +755,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -747,23 +763,23 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                   'Học thử giúp tăng tỉ lệ nhận lớp',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.black.withOpacity(0.5),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Switch
           Switch(
             value: _allowTrialLesson,
             onChanged: (value) => setState(() => _allowTrialLesson = value),
             activeColor: const Color(0xFFD4AF37),
             activeTrackColor: const Color(0xFFD4AF37).withOpacity(0.3),
-            inactiveThumbColor: Colors.white.withOpacity(0.5),
-            inactiveTrackColor: Colors.white.withOpacity(0.1),
+            inactiveThumbColor: Colors.black.withOpacity(0.5),
+            inactiveTrackColor: Colors.black.withOpacity(0.1),
           ),
         ],
       ),
@@ -779,7 +795,7 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -798,21 +814,21 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
               Icon(
                 Icons.info_outline,
                 size: 14,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.black.withOpacity(0.5),
               ),
               const SizedBox(width: 6),
               Text(
                 'Phí đã hiển thị trong báo cáo thu nhập',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.5),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Primary Button
           SizedBox(
             width: double.infinity,
@@ -845,14 +861,14 @@ class _TeacherPricingSetupScreenState extends State<TeacherPricingSetupScreen> {
                     ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Text(
             'Bạn có thể thay đổi bất cứ lúc nào',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.black.withOpacity(0.5),
             ),
           ),
         ],

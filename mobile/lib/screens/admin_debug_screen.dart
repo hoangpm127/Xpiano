@@ -25,28 +25,38 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
   }
 
   Future<void> _loadTeachers() async {
+    if (_supabaseService.currentUser == null) {
+      setState(() {
+        _teachers = [];
+        _isLoading = false;
+        _statusMessage = 'Bạn cần đăng nhập để dùng Admin Debug';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _statusMessage = 'Đang tải danh sách...';
     });
-    
+
     try {
       print('🔍 Fetching all teacher profiles...');
       final teachers = await _supabaseService.getAllTeacherProfiles();
       print('✅ Fetched ${teachers.length} teachers');
-      
+
       if (teachers.isNotEmpty) {
         for (var teacher in teachers) {
-          print('   - ${teacher['full_name']} (${teacher['verification_status']})');
+          print(
+              '   - ${teacher['full_name']} (${teacher['verification_status']})');
         }
       } else {
         print('⚠️ No teachers found in database');
       }
-      
+
       setState(() {
         _teachers = teachers;
         _isLoading = false;
-        _statusMessage = teachers.isEmpty 
+        _statusMessage = teachers.isEmpty
             ? 'Không có giáo viên nào trong database'
             : 'Tải ${teachers.length} giáo viên thành công';
       });
@@ -56,7 +66,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
         _isLoading = false;
         _statusMessage = 'Lỗi: $e';
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -81,7 +91,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
     try {
       final user = _supabaseService.currentUser;
       final debugLines = <String>[];
-      
+
       debugLines.add('🔐 Current User:');
       if (user != null) {
         debugLines.add('   ID: ${user.id}');
@@ -89,7 +99,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
       } else {
         debugLines.add('   ❌ No user logged in');
       }
-      
+
       debugLines.add('\n📋 My Teacher Profile:');
       final myProfile = await _supabaseService.getTeacherProfile();
       if (myProfile != null) {
@@ -99,11 +109,11 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
       } else {
         debugLines.add('   ❌ No teacher profile found for current user');
       }
-      
+
       debugLines.add('\n📊 All Teacher Profiles Query:');
       final allProfiles = await _supabaseService.getAllTeacherProfiles();
       debugLines.add('   Count: ${allProfiles.length}');
-      
+
       if (allProfiles.isEmpty) {
         debugLines.add('   ⚠️ WARNING: Database returned 0 profiles');
         debugLines.add('   Possible causes:');
@@ -113,19 +123,20 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
       } else {
         debugLines.add('   ✅ Found profiles:');
         for (var profile in allProfiles) {
-          debugLines.add('      - ${profile['full_name']} (${profile['verification_status']})');
+          debugLines.add(
+              '      - ${profile['full_name']} (${profile['verification_status']})');
         }
       }
-      
+
       final debugText = debugLines.join('\n');
       print('\n$debugText\n');
-      
+
       setState(() {
         _debugInfo = debugText;
         _isLoading = false;
         _statusMessage = 'Kiểm tra hoàn tất';
       });
-      
+
       if (mounted) {
         showDialog(
           context: context,
@@ -133,7 +144,8 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
             backgroundColor: const Color(0xFF1E1E1E),
             title: Text(
               'Debug Info',
-              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(
+                  color: Colors.white, fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: Text(
@@ -147,7 +159,8 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Đóng', style: GoogleFonts.inter(color: const Color(0xFFD4AF37))),
+                child: Text('Đóng',
+                    style: GoogleFonts.inter(color: const Color(0xFFD4AF37))),
               ),
             ],
           ),
@@ -164,13 +177,20 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
   }
 
   Future<void> _approveAll() async {
+    if (_supabaseService.currentUser == null) {
+      setState(() {
+        _statusMessage = 'Bạn cần đăng nhập để duyệt hồ sơ';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _statusMessage = 'Đang approve...';
     });
 
     final result = await _supabaseService.approveAllPendingTeachers();
-    
+
     setState(() {
       _isLoading = false;
       _statusMessage = result['message'];
@@ -179,7 +199,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
     if (result['success']) {
       // Reload list
       await _loadTeachers();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -196,19 +216,23 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount = _teachers.where((t) => t['verification_status'] == 'pending').length;
-    final approvedCount = _teachers.where((t) => t['verification_status'] == 'approved').length;
+    final pendingCount =
+        _teachers.where((t) => t['verification_status'] == 'pending').length;
+    final approvedCount =
+        _teachers.where((t) => t['verification_status'] == 'approved').length;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         title: Text(
           'Admin Debug',
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(
+              color: Colors.black, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -241,9 +265,12 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatItem('Tổng', '${_teachers.length}', Colors.white),
-                          _buildStatItem('Chờ duyệt', '$pendingCount', Colors.orange),
-                          _buildStatItem('Đã duyệt', '$approvedCount', Colors.green),
+                          _buildStatItem(
+                              'Tổng', '${_teachers.length}', Colors.white),
+                          _buildStatItem(
+                              'Chờ duyệt', '$pendingCount', Colors.orange),
+                          _buildStatItem(
+                              'Đã duyệt', '$approvedCount', Colors.green),
                         ],
                       ),
                       if (_statusMessage.isNotEmpty) ...[
@@ -369,10 +396,10 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
     final name = teacher['full_name'] ?? 'Unknown';
     final status = teacher['verification_status'] ?? 'unknown';
     final specializations = teacher['specializations'] as List?;
-    
+
     Color statusColor;
     String statusText;
-    
+
     switch (status) {
       case 'approved':
         statusColor = Colors.green;
@@ -422,7 +449,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
                 : null,
           ),
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -449,7 +476,7 @@ class _AdminDebugScreenState extends State<AdminDebugScreen> {
               ],
             ),
           ),
-          
+
           // Status Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
