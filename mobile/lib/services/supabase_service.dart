@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/feed_item.dart';
 import '../models/piano.dart';
+import '../models/learner_stats.dart';
 
 import '../models/booking.dart';
 
@@ -864,7 +865,7 @@ class SupabaseService {
 
       final response = await _client
           .from('rentals')
-          .select('*, pianos(id, name, image_url, daily_price, deposit_amount)')
+          .select('*, pianos(*)')
           .eq('renter_id', user.id)
           .order('created_at', ascending: false)
           .limit(limit);
@@ -1320,68 +1321,66 @@ class SupabaseService {
   // ========== LEARNER DASHBOARD METHODS ==========
 
   /// Get learner statistics (bookings, rentals, spending, etc.)
-  Future<dynamic> getLearnerStats() async {
+  Future<LearnerStats?> getLearnerStats() async {
     try {
       final userId = currentUser?.id;
       if (userId == null) return null;
 
-      // Get stats from multiple tables
-      final bookingsCompleted = await _client
+      final bookingsResponse = await _client
           .from('bookings')
-          .select('id')
-          .eq('learner_id', userId)
-          .eq('status', 'completed')
-          .count();
+          .select('id, start_time, status, total_price')
+          .eq('user_id', userId)
+          .order('start_time', ascending: false);
 
-      final bookingsUpcoming = await _client
-          .from('bookings')
-          .select('id')
-          .eq('learner_id', userId)
-          .inFilter('status', ['confirmed', 'pending'])
-          .gte('start_time', DateTime.now().toIso8601String())
-          .count();
+      final bookings = List<Map<String, dynamic>>.from(bookingsResponse as List);
+      final now = DateTime.now();
 
-      // Active rentals (if rentals table exists)
-      int activeRentals = 0;
-      try {
-        final rentalsResponse = await _client
-            .from('rentals')
-            .select('id')
-            .eq('learner_id', userId)
-            .eq('status', 'active')
-            .count();
-        activeRentals = rentalsResponse;
-      } catch (_) {
-        // Table might not exist yet
+      var bookingsCompleted = 0;
+      var bookingsUpcoming = 0;
+      var totalSpent = 0.0;
+
+      for (final booking in bookings) {
+        final status = (booking['status'] ?? '').toString().toLowerCase();
+        final startTimeText = booking['start_time']?.toString();
+        final startTime = startTimeText != null
+            ? DateTime.tryParse(startTimeText)
+            : null;
+
+        final amountRaw = booking['total_price'];
+        final amount = amountRaw is num
+            ? amountRaw.toDouble()
+            : double.tryParse(amountRaw?.toString() ?? '0') ?? 0.0;
+
+        if (status == 'completed') {
+          bookingsCompleted++;
+          totalSpent += amount;
+          continue;
+        }
+
+        if (status != 'cancelled' && startTime != null && startTime.isAfter(now)) {
+          bookingsUpcoming++;
+        }
       }
 
-      // Total spent (sum of all completed bookings)
-      double totalSpent = 0;
+      var activeRentals = 0;
       try {
-        final paymentsResponse = await _client
-            .from('bookings')
-            .select('price')
-            .eq('learner_id', userId)
-            .eq('status', 'completed');
-        
-        if (paymentsResponse is List) {
-          for (var item in paymentsResponse) {
-            totalSpent += (item['price'] ?? 0).toDouble();
-          }
-        }
+        final rentals = await getMyRentals(limit: 100);
+        activeRentals = rentals
+            .where((rental) {
+              final status = (rental['status'] ?? '').toString().toLowerCase();
+              return status == 'active' || status == 'approved' || status == 'ongoing';
+            })
+            .length;
       } catch (_) {}
 
-      // Affiliate earnings (placeholder - implement when referral system exists)
-      double affiliateEarnings = 0;
-
-      return {
-        'completed_bookings': bookingsCompleted,
-        'upcoming_bookings': bookingsUpcoming,
-        'active_rentals': activeRentals,
-        'total_spent': totalSpent,
-        'affiliate_earnings': affiliateEarnings,
-        'courses_enrolled': 0, // TODO: Implement when course enrollment exists
-      };
+      return LearnerStats(
+        completedBookings: bookingsCompleted,
+        upcomingBookings: bookingsUpcoming,
+        activeRentals: activeRentals,
+        totalSpent: totalSpent,
+        affiliateEarnings: 0,
+        coursesEnrolled: 0,
+      );
     } catch (e) {
       print('[getLearnerStats] Error: $e');
       return null;
@@ -1396,38 +1395,40 @@ class SupabaseService {
 
       final response = await _client
           .from('bookings')
-          .select('''
-            *,
-            teacher:teacher_id (
-              id,
-              profiles!inner (
-                full_name,
-                avatar_url
-              )
-            )
-          ''')
-          .eq('learner_id', userId)
-          .inFilter('status', ['confirmed', 'pending'])
-          .gte('start_time', DateTime.now().toIso8601String())
+          .select('id, piano_id, start_time, end_time, total_price, status, pianos(name, image_url)')
+          .eq('user_id', userId)
           .order('start_time', ascending: true)
-          .limit(10);
+          .limit(20);
 
       if (response is List) {
-        return List<Map<String, dynamic>>.from(response).map((booking) {
-          final teacher = booking['teacher'];
-          final profile = teacher?['profiles'];
-          
-          return {
-            'id': booking['id'],
-            'teacher_id': booking['teacher_id'],
-            'teacher_name': profile?['full_name'] ?? 'Unknown',
-            'teacher_avatar': profile?['avatar_url'],
-            'start_time': booking['start_time'],
-            'duration': booking['duration'] ?? 60,
-            'status': booking['status'],
-            'price': booking['price'],
-          };
-        }).toList();
+        final now = DateTime.now();
+
+        return List<Map<String, dynamic>>.from(response)
+            .where((booking) {
+              final status = (booking['status'] ?? '').toString().toLowerCase();
+              if (status == 'cancelled' || status == 'completed') return false;
+              final startTime = DateTime.tryParse(booking['start_time']?.toString() ?? '');
+              return startTime != null && startTime.isAfter(now);
+            })
+            .map((booking) {
+              final startTime = DateTime.tryParse(booking['start_time']?.toString() ?? '');
+              final endTime = DateTime.tryParse(booking['end_time']?.toString() ?? '');
+              final duration = (startTime != null && endTime != null)
+                  ? endTime.difference(startTime).inMinutes
+                  : 60;
+              final piano = booking['pianos'];
+
+              return {
+                'id': booking['id'],
+                'teacher_name': piano?['name'] ?? 'Buổi học piano',
+                'teacher_avatar': piano?['image_url'],
+                'start_time': booking['start_time'],
+                'duration': duration <= 0 ? 60 : duration,
+                'status': booking['status'] ?? 'pending',
+                'price': booking['total_price'] ?? 0,
+              };
+            })
+            .toList();
       }
 
       return [];
@@ -1445,34 +1446,28 @@ class SupabaseService {
 
       final response = await _client
           .from('bookings')
-          .select('''
-            *,
-            teacher:teacher_id (
-              id,
-              profiles!inner (
-                full_name,
-                avatar_url
-              )
-            )
-          ''')
-          .eq('learner_id', userId)
+          .select('id, piano_id, start_time, end_time, total_price, status, pianos(name, image_url)')
+          .eq('user_id', userId)
           .eq('status', 'completed')
           .order('start_time', ascending: false)
           .limit(50);
 
       if (response is List) {
         return List<Map<String, dynamic>>.from(response).map((booking) {
-          final teacher = booking['teacher'];
-          final profile = teacher?['profiles'];
+          final startTime = DateTime.tryParse(booking['start_time']?.toString() ?? '');
+          final endTime = DateTime.tryParse(booking['end_time']?.toString() ?? '');
+          final duration = (startTime != null && endTime != null)
+              ? endTime.difference(startTime).inMinutes
+              : 60;
+          final piano = booking['pianos'];
           
           return {
             'id': booking['id'],
-            'teacher_id': booking['teacher_id'],
-            'teacher_name': profile?['full_name'] ?? 'Unknown',
-            'teacher_avatar': profile?['avatar_url'],
+            'teacher_name': piano?['name'] ?? 'Buổi học piano',
+            'teacher_avatar': piano?['image_url'],
             'start_time': booking['start_time'],
-            'duration': booking['duration'] ?? 60,
-            'price': booking['price'],
+            'duration': duration <= 0 ? 60 : duration,
+            'price': booking['total_price'] ?? 0,
           };
         }).toList();
       }
@@ -1487,43 +1482,31 @@ class SupabaseService {
   /// Get learner's active rentals
   Future<List<Map<String, dynamic>>> getLearnerActiveRentals() async {
     try {
-      final userId = currentUser?.id;
-      if (userId == null) return [];
+      final rentals = await getMyRentals(limit: 100);
 
-      final response = await _client
-          .from('rentals')
-          .select('''
-            *,
-            piano:piano_id (
-              id,
-              name,
-              brand,
-              model,
-              monthly_price,
-              images
-            )
-          ''')
-          .eq('learner_id', userId)
-          .eq('status', 'active')
-          .order('created_at', ascending: false);
+      return rentals
+          .where((rental) {
+            final status = (rental['status'] ?? '').toString().toLowerCase();
+            return status == 'active' || status == 'approved' || status == 'ongoing';
+          })
+          .map((rental) {
+            final piano = rental['pianos'];
+            final dailyPriceRaw = piano?['daily_price'];
+            final dailyPrice = dailyPriceRaw is num
+                ? dailyPriceRaw.toDouble()
+                : double.tryParse(dailyPriceRaw?.toString() ?? '0') ?? 0.0;
 
-      if (response is List) {
-        return List<Map<String, dynamic>>.from(response).map((rental) {
-          final piano = rental['piano'];
-          
-          return {
-            'id': rental['id'],
-            'piano_id': rental['piano_id'],
-            'piano_name': '${piano?['brand'] ?? ''} ${piano?['model'] ?? 'Piano'}',
-            'start_date': rental['start_date'],
-            'end_date': rental['end_date'],
-            'monthly_price': piano?['monthly_price'] ?? 0,
-            'status': rental['status'],
-          };
-        }).toList();
-      }
-
-      return [];
+            return {
+              'id': rental['id'],
+              'piano_id': rental['piano_id'],
+              'piano_name': piano?['name'] ?? 'Piano',
+              'start_date': rental['start_date'] ?? '',
+              'end_date': rental['end_date'] ?? '',
+              'monthly_price': (dailyPrice * 30),
+              'status': rental['status'] ?? 'active',
+            };
+          })
+          .toList();
     } catch (e) {
       print('[getLearnerActiveRentals] Error: $e (table might not exist yet)');
       return [];
@@ -1536,55 +1519,39 @@ class SupabaseService {
       final userId = currentUser?.id;
       if (userId == null) return [];
 
-      // Get unique teachers from bookings
       final response = await _client
           .from('bookings')
-          .select('''
-            teacher_id,
-            teacher:teacher_id (
-              id,
-              profiles!inner (
-                full_name,
-                avatar_url
-              ),
-              teacher_profiles!inner (
-                specialization,
-                hourly_rate
-              )
-            )
-          ''')
-          .eq('learner_id', userId)
-          .order('created_at', ascending: false);
+          .select('piano_id, pianos(name, image_url), total_price')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(100);
 
-      if (response is List) {
-        // Get unique teachers
-        final seenTeachers = <String>{};
-        final courses = <Map<String, dynamic>>[];
+      if (response is! List) return [];
 
-        for (var booking in response) {
-          final teacherId = booking['teacher_id'];
-          if (teacherId == null || seenTeachers.contains(teacherId)) {
-            continue;
-          }
-          seenTeachers.add(teacherId);
+      final seenCourses = <String>{};
+      final courses = <Map<String, dynamic>>[];
 
-          final teacher = booking['teacher'];
-          final profile = teacher?['profiles'];
-          final teacherProfile = teacher?['teacher_profiles'];
-          
-          courses.add({
-            'teacher_id': teacherId,
-            'teacher_name': profile?['full_name'] ?? 'Unknown',
-            'teacher_avatar': profile?['avatar_url'],
-            'course_name': teacherProfile?['specialization'] ?? 'Piano Course',
-            'hourly_rate': teacherProfile?['hourly_rate'] ?? 0,
-          });
-        }
+      for (final booking in response) {
+        final pianoId = booking['piano_id']?.toString();
+        if (pianoId == null || seenCourses.contains(pianoId)) continue;
+        seenCourses.add(pianoId);
 
-        return courses;
+        final piano = booking['pianos'];
+        final priceRaw = booking['total_price'];
+        final price = priceRaw is num
+            ? priceRaw.toDouble()
+            : double.tryParse(priceRaw?.toString() ?? '0') ?? 0.0;
+
+        courses.add({
+          'teacher_id': pianoId,
+          'teacher_name': piano?['name'] ?? 'Khóa học piano',
+          'teacher_avatar': piano?['image_url'],
+          'course_name': 'Piano cơ bản',
+          'hourly_rate': price,
+        });
       }
 
-      return [];
+      return courses;
     } catch (e) {
       print('[getLearnerEnrolledCourses] Error: $e');
       return [];
@@ -1597,37 +1564,23 @@ class SupabaseService {
       final userId = currentUser?.id;
       if (userId == null) return [];
 
-      // Get all completed bookings as payment history
       final response = await _client
           .from('bookings')
-          .select('''
-            id,
-            teacher_id,
-            start_time,
-            price,
-            status,
-            created_at,
-            teacher:teacher_id (
-              profiles!inner (
-                full_name
-              )
-            )
-          ''')
-          .eq('learner_id', userId)
+          .select('id, start_time, total_price, status, created_at, pianos(name)')
+          .eq('user_id', userId)
           .eq('status', 'completed')
           .order('start_time', ascending: false)
           .limit(100);
 
       if (response is List) {
         return List<Map<String, dynamic>>.from(response).map((payment) {
-          final teacher = payment['teacher'];
-          final profile = teacher?['profiles'];
+          final piano = payment['pianos'];
           
           return {
             'id': payment['id'],
             'type': 'booking',
-            'description': 'Buổi học với ${profile?['full_name'] ?? 'Unknown'}',
-            'amount': payment['price'] ?? 0,
+            'description': 'Thanh toán buổi học - ${piano?['name'] ?? 'Piano'}',
+            'amount': payment['total_price'] ?? 0,
             'date': payment['start_time'],
             'created_at': payment['created_at'],
           };

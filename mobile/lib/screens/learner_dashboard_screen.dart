@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/supabase_service.dart';
 import '../models/learner_stats.dart';
+import 'login_screen.dart';
 
 class LearnerDashboardScreen extends StatefulWidget {
   const LearnerDashboardScreen({super.key});
@@ -44,7 +45,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
         _supabaseService.getLearnerUpcomingBookings(),
         _supabaseService.getLearnerActiveRentals(),
         _supabaseService.getLearnerEnrolledCourses(),
-        _supabaseService.getCurrentUserProfile(),
+        _supabaseService.getMyProfile(),
       ]);
 
       if (mounted) {
@@ -963,8 +964,11 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
                       if (confirm == true) {
                         await _supabaseService.signOut();
                         if (mounted) {
-                          // Reload app state
-                          setState(() {});
+                          // Navigate to login screen
+                          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
                         }
                       }
                     },
