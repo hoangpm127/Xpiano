@@ -24,10 +24,13 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
 
   // Colors
   final Color primaryGold = const Color(0xFFD4AF37);
-  final Color backgroundLight = const Color(0xFFF8F6F0);
+  final Color darkGold = const Color(0xFFB39129);
+  final Color backgroundLight = const Color(0xFFF7F7F7);
   final Color cardLight = const Color(0xFFFFFFFF);
+  final Color borderLight = const Color(0xFFE6E6E6);
   final Color textDark = const Color(0xFF1A1A1A);
   final Color textGray = const Color(0xFF6B6B6B);
+  final Color textMuted = const Color(0xFF6B6B6B);
 
   @override
   void initState() {
@@ -105,35 +108,89 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
   Widget _buildHeader() {
     final name = _userProfile?['full_name'] ?? 'Học viên';
     final avatarUrl = _userProfile?['avatar_url'];
+    final email = _userProfile?['email'] ?? _supabaseService.currentUser?.email ?? '';
     
     return SliverToBoxAdapter(
       child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              primaryGold,
-              primaryGold.withOpacity(0.8),
-            ],
+          color: cardLight,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
           ),
+          border: Border(
+            bottom: BorderSide(
+              color: primaryGold.withOpacity(0.25),
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: SafeArea(
           bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Hồ sơ Learner',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: textDark,
+                    ),
+                  ),
+                  const Spacer(),
+                  OutlinedButton.icon(
+                    onPressed: () => _loadDashboardData(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text(
+                      'Làm mới',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textMuted,
+                      side: BorderSide(color: textGray.withOpacity(0.35)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFE9D08A),
+                      primaryGold,
+                    ],
+                  ),
+                ),
+                child: Row(
                   children: [
-                    // Avatar
                     Container(
-                      width: 70,
-                      height: 70,
+                      width: 68,
+                      height: 68,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
+                        border: Border.all(color: Colors.white, width: 2.5),
                         image: avatarUrl != null
                             ? DecorationImage(
                                 image: NetworkImage(avatarUrl),
@@ -143,50 +200,100 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
                         color: Colors.white.withOpacity(0.3),
                       ),
                       child: avatarUrl == null
-                          ? Icon(Icons.person, size: 35, color: Colors.white)
+                          ? const Icon(Icons.person, size: 34, color: Colors.white)
                           : null,
                     ),
-                    const SizedBox(width: 16),
-                    
-                    // Name & Badge
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          if (email.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 10,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white.withOpacity(0.22),
+                              borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              '🎓 Học viên',
+                              'Thành viên Learner',
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: 12,
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
+                    IconButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Xác nhận'),
+                            content: const Text('Bạn có chắc muốn đăng xuất?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Hủy'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text(
+                                  'Đăng xuất',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await _supabaseService.signOut();
+                          if (mounted) {
+                            Navigator.of(context, rootNavigator: true)
+                                .pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => const LoginScreen()),
+                              (route) => false,
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -204,21 +311,21 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
               icon: Icons.check_circle,
               label: 'Đã hoàn thành',
               value: '${_stats?.completedBookings ?? 0}',
-              color: Colors.green,
+              color: const Color(0xFF8B6B1A),
             ),
             const SizedBox(width: 12),
             _buildStatCard(
               icon: Icons.calendar_today,
               label: 'Sắp tới',
               value: '${_stats?.upcomingBookings ?? 0}',
-              color: Colors.blue,
+              color: primaryGold,
             ),
             const SizedBox(width: 12),
             _buildStatCard(
               icon: Icons.piano,
               label: 'Đàn đang thuê',
               value: '${_stats?.activeRentals ?? 0}',
-              color: Colors.orange,
+              color: darkGold,
             ),
           ],
         ),
@@ -238,6 +345,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
         decoration: BoxDecoration(
           color: cardLight,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: primaryGold.withOpacity(0.18)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -253,8 +361,8 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
             Text(
               value,
               style: GoogleFonts.inter(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
                 color: textDark,
               ),
             ),
@@ -264,7 +372,8 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: textGray,
+                    color: textMuted,
+                    fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -285,7 +394,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '📚 Khóa học của tôi',
+                  'Khóa học của tôi',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -431,7 +540,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '⏰ Lịch học sắp tới',
+              'Lịch học sắp tới',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -462,9 +571,15 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
     final duration = booking['duration'] ?? 60;
     final status = booking['status'] ?? 'confirmed';
     
-    Color statusColor = Colors.green;
+    Color statusColor = const Color(0xFF4CAF50);
     if (status == 'pending') statusColor = Colors.orange;
     if (status == 'cancelled') statusColor = Colors.red;
+    if (status == 'completed') statusColor = textMuted;
+
+    String statusText = 'ĐÃ ĐẶT';
+    if (status == 'pending') statusText = 'CHỜ XỬ LÝ';
+    if (status == 'cancelled') statusText = 'ĐÃ HỦY';
+    if (status == 'completed') statusText = 'HOÀN THÀNH';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -472,7 +587,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
       decoration: BoxDecoration(
         color: cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withOpacity(0.3), width: 2),
+          border: Border.all(color: borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -502,7 +617,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  status.toUpperCase(),
+                  statusText,
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -576,7 +691,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '🎹 Đàn đang thuê',
+              'Đàn đang thuê',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -698,7 +813,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '💳 Thanh toán',
+              'Thanh toán',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -776,7 +891,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '🎁 Giới thiệu bạn bè',
+              'Giới thiệu bạn bè',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -887,7 +1002,7 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '⚙️ Cài đặt',
+              'Tài khoản & Cài đặt',
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1031,7 +1146,14 @@ class _LearnerDashboardScreenState extends State<LearnerDashboardScreen> {
       decoration: BoxDecoration(
         color: cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textGray.withOpacity(0.2)),
+        border: Border.all(color: borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
